@@ -11,7 +11,7 @@ public interface AdminCourseService {
 
     PageResponse<CourseResponse> getByStatus(CourseStatus status, Pageable pageable);
 
-    PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author);
+    PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author, CourseStatus status);
 
     void ban(Long id);
 

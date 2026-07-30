@@ -58,7 +58,7 @@ public class User extends AbstractEntity<Long> {
     @DateTimeFormat(pattern = "yyyy/MM/dd")
     LocalDate dob;
 
-    @BatchSize(size = 20)
+    @BatchSize(size = 20)//N+1
     @ManyToMany
     @Builder.Default
     Set<Role> roles = new LinkedHashSet<>();

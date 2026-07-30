@@ -19,7 +19,7 @@ import com.dxh.learninghub.mapper.CourseMapper;
 import com.dxh.learninghub.repo.CourseRepository;
 import com.dxh.learninghub.repo.LessonRepository;
 import com.dxh.learninghub.repo.UserRepository;
-import com.dxh.learninghub.repo.specification.CourseSpecifications;
+import com.dxh.learninghub.repo.specification.CourseSpecification;
 import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.interfac.CourseService;
 import com.dxh.learninghub.service.interfac.NotificationService;
@@ -233,8 +233,9 @@ public class CourseServiceImpl implements CourseService {
             sync = true)
     public PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author) {
         Page<Course> courses = courseRepository.findAll(
-                CourseSpecifications.publicSearch(course, author),
+                CourseSpecification.publicSearch(course, author),
                 pageable);
+
         return PageResponse.<CourseResponse>builder()
                 .pageNo(pageable.getPageNumber() + 1)
                 .pageSize(pageable.getPageSize())
@@ -245,7 +246,6 @@ public class CourseServiceImpl implements CourseService {
                         .toList())
                 .build();
     }
-
     private Course getManagedCourse(Long courseId) {
         Course course = courseRepository.findWithAuthorById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));

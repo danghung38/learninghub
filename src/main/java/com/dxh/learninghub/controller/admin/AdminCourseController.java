@@ -34,14 +34,15 @@ public class AdminCourseController {
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) String[] course,
-            @RequestParam(required = false) String[] author) {
+            @RequestParam(required = false) String[] author,
+            @RequestParam(required = false) CourseStatus status) {
 
         Pageable pageable = createCoursePageable(pageNo, pageSize, sortBy);
 
         return ApiResponse.<PageResponse<CourseResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Search course successfully")
-                .result(adminCourseService.searchCourses(pageable, course, author))
+                .result(adminCourseService.searchCourses(pageable, course, author, status))
                 .build();
     }
 
