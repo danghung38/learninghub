@@ -42,6 +42,8 @@ public enum ErrorCode {
     INVALID_SORT_DIRECTION(1014, "Sort direction must be asc or desc", HttpStatus.BAD_REQUEST),
     INVALID_FILE_SIZE(1015, "File size must be greater than 0", HttpStatus.BAD_REQUEST),
     INVALID_URL(1016, "Invalid URL", HttpStatus.BAD_REQUEST),
+    INVALID_ROLE_ENUM(1017, "Invalid enum value. Allowed values are from {ADMIN,TEACHER,USER}", HttpStatus.BAD_REQUEST),
+    INVALID_ENUM_VALUE(1018, "Invalid enum value. Allowed values are from {enumClass}", HttpStatus.BAD_REQUEST),
 
     UNAUTHENTICATED(1100, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1101, "You do not have permission", HttpStatus.FORBIDDEN),
@@ -95,6 +97,8 @@ public enum ErrorCode {
     COURSE_NOT_DRAFT(1310, "Only a draft course can be submitted for approval", HttpStatus.CONFLICT),
     COURSE_NOT_PENDING(1311, "Only a pending course can be approved or rejected", HttpStatus.CONFLICT),
     COURSE_CONTENT_INCOMPLETE(1312, "A course must contain at least one chapter and one lesson before submission", HttpStatus.BAD_REQUEST),
+    INVALID_COURSE_LEVEL(1313, "Invalid course level. Allowed values are from {BEGINNER,ADVANCED,EXPERT}", HttpStatus.BAD_REQUEST),
+    INVALID_COURSE_STATUS(1314, "Invalid course status. Allowed values are from {DRAFT,PENDING,APPROVED,REJECTED,BANNED,DELEDED}", HttpStatus.BAD_REQUEST),
 
     CHAPTER_NOT_EXISTED(1400, "Chapter not existed", HttpStatus.NOT_FOUND),
     NOT_CHAPTER_OWNER(1401, "You are not the owner of this chapter", HttpStatus.FORBIDDEN),

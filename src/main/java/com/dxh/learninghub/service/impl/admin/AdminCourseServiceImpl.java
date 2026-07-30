@@ -1,6 +1,7 @@
 package com.dxh.learninghub.service.impl.admin;
 
 import com.dxh.learninghub.constant.CacheNames;
+import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.response.CourseResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.entity.Course;
@@ -35,15 +36,10 @@ public class AdminCourseServiceImpl implements AdminCourseService {
     CourseMapper courseMapper;
     NotificationService notificationService;
 
+    @Override
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author, CourseStatus status) {
-        Specification<Course> spec = CourseSpecification.adminSearch(course, author, status);
-        return buildPageResponse(spec, pageable);
-    }
-
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public PageResponse<CourseResponse> getByStatus(CourseStatus status, Pageable pageable) {
-        Specification<Course> spec = CourseSpecification.adminSearch(null, null, status);
+    public PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter) {
+        Specification<Course> spec = CourseSpecification.adminSearch(filter);
         return buildPageResponse(spec, pageable);
     }
 

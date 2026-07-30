@@ -42,7 +42,7 @@ public record UserCreationRequest(
     String address,
 
 //    @EnumValue(name = "gender", enumClass = Gender.class)
-    @GenderSubset(anyOf = {Gender.MALE, Gender.FEMALE, Gender.OTHER},message = "INVALID_GENDER")
+    @GenderSubset(anyOf = {Gender.MALE, Gender.FEMALE, Gender.OTHER})
     String gender,
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy/MM/dd")

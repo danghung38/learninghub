@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.interfac.admin;
 
+import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.UserResponse;
 import org.springframework.data.domain.Pageable;
@@ -10,11 +11,7 @@ public interface AdminUserService {
 
     PageResponse<UserResponse> searchUsers(
             Pageable pageable,
-            String username,
-            String fullName,
-            String role,
-            Boolean banned,
-            Boolean enabled);
+            UserSearchFilterRequest filter);
 
     PageResponse<UserResponse> getPendingTeacherApplications(Pageable pageable);
     void banUser(Long userId);

@@ -1,12 +1,9 @@
 package com.dxh.learninghub.service.interfac;
 
-import com.dxh.learninghub.dto.request.CourseUploadRequest;
+import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.request.CourseUpdateRequest;
-import com.dxh.learninghub.dto.response.CoursePreviewResponse;
-import com.dxh.learninghub.dto.response.CourseManagementPreviewResponse;
-import com.dxh.learninghub.dto.response.CourseResponse;
-import com.dxh.learninghub.dto.response.CourseUploadResponse;
-import com.dxh.learninghub.dto.response.PageResponse;
+import com.dxh.learninghub.dto.request.CourseUploadRequest;
+import com.dxh.learninghub.dto.response.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +29,5 @@ public interface CourseService {
 
     void softDeleteCourse(Long courseId);
 
-    PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author);
-
-
+    PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter);
 }

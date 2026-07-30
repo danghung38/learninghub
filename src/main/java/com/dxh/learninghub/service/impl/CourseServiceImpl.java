@@ -2,6 +2,7 @@ package com.dxh.learninghub.service.impl;
 
 
 import com.dxh.learninghub.constant.CacheNames;
+import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.request.CourseUploadRequest;
 import com.dxh.learninghub.dto.request.CourseUpdateRequest;
 import com.dxh.learninghub.dto.response.CoursePreviewResponse;
@@ -231,9 +232,9 @@ public class CourseServiceImpl implements CourseService {
             cacheNames = CacheNames.COURSE_LIST,
             keyGenerator = "courseListKeyGenerator",
             sync = true)
-    public PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author) {
+    public PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter) {
         Page<Course> courses = courseRepository.findAll(
-                CourseSpecification.publicSearch(course, author),
+                CourseSpecification.publicSearch(filter),
                 pageable);
 
         return PageResponse.<CourseResponse>builder()
@@ -246,6 +247,7 @@ public class CourseServiceImpl implements CourseService {
                         .toList())
                 .build();
     }
+
     private Course getManagedCourse(Long courseId) {
         Course course = courseRepository.findWithAuthorById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));

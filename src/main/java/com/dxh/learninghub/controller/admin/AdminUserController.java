@@ -1,14 +1,17 @@
 package com.dxh.learninghub.controller.admin;
 
+import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.*;
 import com.dxh.learninghub.service.interfac.admin.AdminUserService;
 import com.dxh.learninghub.utils.PageUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -100,11 +103,7 @@ public class AdminUserController {
             @RequestParam(defaultValue = "1") Integer pageNo,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String fullName,
-            @RequestParam(required = false) String role,
-            @RequestParam(required = false) Boolean banned,
-            @RequestParam(required = false) Boolean enabled) {
+            @ParameterObject @ModelAttribute @Valid UserSearchFilterRequest filter) {
 
         Pageable pageable = PageUtil.createPageable(
                 pageNo, pageSize, sortBy,
@@ -114,8 +113,7 @@ public class AdminUserController {
         return ApiResponse.<PageResponse<UserResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Successfully get user list")
-                .result(adminUserService.searchUsers(
-                        pageable, username, fullName, role, banned, enabled))
+                .result(adminUserService.searchUsers(pageable, filter))
                 .build();
     }
 

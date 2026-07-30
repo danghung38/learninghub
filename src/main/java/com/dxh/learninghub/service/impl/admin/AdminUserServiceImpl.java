@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.impl.admin;
 
+import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.UserResponse;
 import com.dxh.learninghub.entity.Role;
@@ -134,20 +135,21 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public PageResponse<UserResponse> searchUsers(
-            Pageable pageable,
-            String username,
-            String fullName,
-            String role,
-            Boolean banned,
-            Boolean enabled) {
-        String normalizedRole = normalize(role) == null ? null : parseRole(role).name();
-        // 1. Tạo Specification từ các tham số tìm kiếm
-        Specification<User> spec = UserSpecification.getUsersWithFilter(
-                username, fullName, normalizedRole, banned, enabled
-        );
+    public PageResponse<UserResponse> searchUsers(Pageable pageable, UserSearchFilterRequest filter) {
+        // Tránh lỗi null pointer nếu lỡ không truyền filter
+        String normalizedRole = null;
+        if (filter != null && filter.role() != null && !filter.role().isBlank()) {
+            normalizedRole = parseRole(filter.role()).name();
+        }
 
-        // 2. Thực thi tìm kiếm và phân trang
+        String username = filter != null ? filter.username() : null;
+        String fullName = filter != null ? filter.fullName() : null;
+        Boolean banned = filter != null ? filter.banned() : null;
+        Boolean enabled = filter != null ? filter.enabled() : null;
+
+        // 1. Tạo Specification từ DTO Filter
+        Specification<User> spec = UserSpecification.getUsersWithFilter(filter);
+        // 2. Thực thi tìm kiếm với pageable gốc
         Page<User> users = userRepository.findAll(spec, pageable);
         return toPageResponse(users);
     }

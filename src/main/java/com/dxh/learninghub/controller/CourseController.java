@@ -1,5 +1,6 @@
 package com.dxh.learninghub.controller;
 
+import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.request.CourseUploadRequest;
 import com.dxh.learninghub.dto.request.CourseUpdateRequest;
 import com.dxh.learninghub.dto.request.PresignedUploadRequest;
@@ -14,6 +15,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -47,8 +49,7 @@ public class CourseController {
             @RequestParam(defaultValue = "1") Integer pageNo,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false) String[] course,
-            @RequestParam(required = false) String[] author) {
+            @ParameterObject @Valid CourseSearchFilterRequest filter) {
 
         Pageable pageable = PageUtil.createPageable(
                 pageNo, pageSize, sortBy,
@@ -58,7 +59,7 @@ public class CourseController {
         return ApiResponse.<PageResponse<CourseResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Successfully get course list")
-                .result(courseService.searchCourses(pageable, course, author))
+                .result(courseService.searchCourses(pageable, filter))
                 .build();
     }
 
