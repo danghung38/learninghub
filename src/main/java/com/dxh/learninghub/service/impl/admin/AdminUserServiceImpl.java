@@ -10,6 +10,7 @@ import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.mapper.UserMapper;
 import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
+import com.dxh.learninghub.repo.specification.UserSpecification;
 import com.dxh.learninghub.service.interfac.admin.AdminUserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,8 +142,13 @@ public class AdminUserServiceImpl implements AdminUserService {
             Boolean banned,
             Boolean enabled) {
         String normalizedRole = normalize(role) == null ? null : parseRole(role).name();
-        Page<User> users = userRepository.searchUsers(
-                normalize(username), normalize(fullName), normalizedRole, banned, enabled, pageable);
+        // 1. Tạo Specification từ các tham số tìm kiếm
+        Specification<User> spec = UserSpecification.getUsersWithFilter(
+                username, fullName, normalizedRole, banned, enabled
+        );
+
+        // 2. Thực thi tìm kiếm và phân trang
+        Page<User> users = userRepository.findAll(spec, pageable);
         return toPageResponse(users);
     }
 
@@ -153,11 +160,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     private PageResponse<UserResponse> toPageResponse(Page<User> page) {
-        List<Long> userIds = page.stream().map(User::getId).toList();
-        Map<Long, User> usersById = userRepository.findAllByIdIn(userIds).stream()
-                .collect(java.util.stream.Collectors.toMap(User::getId, user -> user));
-        List<UserResponse> responses = userIds.stream()
-                .map(usersById::get)
+        // Nhờ có @BatchSize(size = 20) trên User.roles,
+        // việc map trực tiếp qua userMapper bên dưới sẽ KHÔNG BỊ N+1!
+        List<UserResponse> responses = page.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
 

@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.BatchSize;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
@@ -57,6 +58,7 @@ public class User extends AbstractEntity<Long> {
     @DateTimeFormat(pattern = "yyyy/MM/dd")
     LocalDate dob;
 
+    @BatchSize(size = 20)
     @ManyToMany
     @Builder.Default
     Set<Role> roles = new LinkedHashSet<>();
