@@ -91,32 +91,17 @@ public enum ErrorCode {
     COURSE_ALREADY_DELEDED(1306, "Course is already soft-deleted", HttpStatus.BAD_REQUEST),
     COURSE_DELEDED_READ_ONLY(1307, "Soft-deleted courses cannot be modified", HttpStatus.CONFLICT),
     COURSE_NOT_BANNED(1308, "Course is not banned", HttpStatus.BAD_REQUEST),
-    COURSE_BANNED_CANNOT_DELETE(
-            1309,
-            "A banned course cannot be soft-deleted by its owner",
-            HttpStatus.CONFLICT),
-    COURSE_NOT_DRAFT(
-            1310,
-            "Only a draft course can be submitted for approval",
-            HttpStatus.CONFLICT),
-    COURSE_NOT_PENDING(
-            1311,
-            "Only a pending course can be approved or rejected",
-            HttpStatus.CONFLICT),
-    COURSE_CONTENT_INCOMPLETE(
-            1312,
-            "A course must contain at least one chapter and one lesson before submission",
-            HttpStatus.BAD_REQUEST),
+    COURSE_BANNED_CANNOT_DELETE(1309, "A banned course cannot be soft-deleted by its owner", HttpStatus.CONFLICT),
+    COURSE_NOT_DRAFT(1310, "Only a draft course can be submitted for approval", HttpStatus.CONFLICT),
+    COURSE_NOT_PENDING(1311, "Only a pending course can be approved or rejected", HttpStatus.CONFLICT),
+    COURSE_CONTENT_INCOMPLETE(1312, "A course must contain at least one chapter and one lesson before submission", HttpStatus.BAD_REQUEST),
 
     CHAPTER_NOT_EXISTED(1400, "Chapter not existed", HttpStatus.NOT_FOUND),
     NOT_CHAPTER_OWNER(1401, "You are not the owner of this chapter", HttpStatus.FORBIDDEN),
 
     LESSON_NOT_EXISTED(1500, "Lesson not existed", HttpStatus.NOT_FOUND),
     LESSON_ACCESS_DENIED(1501, "You do not have access to this lesson", HttpStatus.FORBIDDEN),
-    LESSON_CROSS_COURSE_MOVE_NOT_ALLOWED(
-            1502,
-            "A lesson can only be moved between chapters in the same course",
-            HttpStatus.BAD_REQUEST),
+    LESSON_CROSS_COURSE_MOVE_NOT_ALLOWED(1502, "A lesson can only be moved between chapters in the same course", HttpStatus.BAD_REQUEST),
 
     FAVORITE_NOT_EXISTED(1600, "Favorite not existed", HttpStatus.NOT_FOUND),
     ALREADY_IN_FAVORITES(1601, "Course already in favorites", HttpStatus.BAD_REQUEST),

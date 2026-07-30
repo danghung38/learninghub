@@ -85,8 +85,9 @@ public class TeacherServiceImpl implements TeacherService {
         user.setFacebookLink(request.facebookLink());
 
         // Đăng ký lần đầu -> chưa có file cũ, upload thẳng, không cần lo thứ tự xóa/tạo
-        user.setCvUrl(awsS3Service.uploadTeacherCv(cv, user.getId()));
-        user.setCertificateUrl(awsS3Service.uploadTeacherCertificate(certificate, user.getId()));
+        awsS3Service.uploadFile(cv, "teachers/" + user.getId() + "/cv", UploadPolicy.TEACHER_DOCUMENT);
+        awsS3Service.uploadFile(certificate, "teachers/" + user.getId() + "/certificates", UploadPolicy.TEACHER_DOCUMENT);
+
 
         user.setRegistrationStatus(RegistrationStatus.PENDING);
 
@@ -124,9 +125,11 @@ public class TeacherServiceImpl implements TeacherService {
 
         String oldCv = user.getCvUrl();
         String oldCertificate = user.getCertificateUrl();
-        String newCv = awsS3Service.uploadTeacherCv(cv, user.getId());
-        String newCertificate =
-                awsS3Service.uploadTeacherCertificate(certificate, user.getId());
+        String newCv = awsS3Service.uploadFile(cv, "teachers/" + user.getId() + "/cv", UploadPolicy.TEACHER_DOCUMENT);
+        String newCertificate = awsS3Service.uploadFile(certificate, "teachers/" + user.getId() + "/certificates", UploadPolicy.TEACHER_DOCUMENT);
+
+
+
 
         user.setExpertise(request.expertise());
         user.setYearsOfExperience(request.yearsOfExperience());
@@ -173,9 +176,11 @@ public class TeacherServiceImpl implements TeacherService {
         boolean hasNewCertificate = certificate != null && !certificate.isEmpty();
         String oldCv = user.getCvUrl();
         String oldCertificate = user.getCertificateUrl();
-        String newCv = hasNewCv ? awsS3Service.uploadTeacherCv(cv, user.getId()) : null;
+        String newCv = hasNewCv
+                ? awsS3Service.uploadFile(cv, "teachers/" + user.getId() + "/cv", UploadPolicy.TEACHER_DOCUMENT)
+                : null;
         String newCertificate = hasNewCertificate
-                ? awsS3Service.uploadTeacherCertificate(certificate, user.getId())
+                ? awsS3Service.uploadFile(certificate, "teachers/" + user.getId() + "/certificates", UploadPolicy.TEACHER_DOCUMENT)
                 : null;
 
         if (hasNewCv) user.setCvUrl(newCv);

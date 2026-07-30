@@ -119,7 +119,9 @@ public class CourseServiceImpl implements CourseService {
         User teacher = currentUserProvider.getCurrentUser();
 
         Course course = courseMapper.courseUploadToCourse(request);
-        course.setThumbnail(awsS3Service.uploadCourseThumbnail(thumbnail, teacher.getId()));
+        course.setThumbnail(awsS3Service.uploadFile(thumbnail,
+                "courses/" + teacher.getId() + "/thumbnails",
+                UploadPolicy.IMAGE));
         course.setAuthor(teacher);
         course.setStatus(CourseStatus.DRAFT);
 
@@ -151,8 +153,9 @@ public class CourseServiceImpl implements CourseService {
         boolean hasNewThumbnail = thumbnail != null && !thumbnail.isEmpty();
 
         if (hasNewThumbnail) {
-            course.setThumbnail(awsS3Service.uploadCourseThumbnail(
-                    thumbnail, course.getAuthor().getId()));
+            course.setThumbnail(awsS3Service.uploadFile(thumbnail,
+                    "courses/" + course.getAuthor().getId() + "/thumbnails",
+                    UploadPolicy.IMAGE));
         }
 
         boolean editableLifecycle = oldStatus != CourseStatus.DELEDED

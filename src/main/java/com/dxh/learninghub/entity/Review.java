@@ -13,10 +13,7 @@ import java.util.List;
         indexes = {
                 @Index(
                         name = "idx_review_course_parent_created",
-                        columnList = "course_id, parent_review_id, create_at"),
-                @Index(
-                        name = "idx_review_parent_created",
-                        columnList = "parent_review_id, create_at")
+                        columnList = "course_id, parent_review_id, create_at")
         })
 @Setter
 @Getter

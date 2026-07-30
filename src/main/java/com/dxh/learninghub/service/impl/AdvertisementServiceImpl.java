@@ -45,7 +45,8 @@ public class AdvertisementServiceImpl implements AdvertisementService {
 
         Advertisement advertisement = advertisementMapper.toEntity(request);
         advertisement.setCourse(findCourse(request.courseId()));
-        advertisement.setImage(awsS3Service.uploadAdvertisementImage(image));
+        //  Dùng hàm uploadFile chung folder "advertisements"
+        advertisement.setImage(awsS3Service.uploadFile(image, "advertisements", UploadPolicy.IMAGE));
         advertisement.setActive(true);
         return advertisementMapper.toResponse(advertisementRepository.save(advertisement));
     }
@@ -70,7 +71,8 @@ public class AdvertisementServiceImpl implements AdvertisementService {
 
         boolean hasNewImage = image != null && !image.isEmpty();
         if (hasNewImage) {
-            advertisement.setImage(awsS3Service.uploadAdvertisementImage(image));
+            //  Dùng hàm uploadFile chung folder "advertisements"
+            advertisement.setImage(awsS3Service.uploadFile(image, "advertisements", UploadPolicy.IMAGE));
         }
 
         Advertisement savedAdvertisement = advertisementRepository.save(advertisement);

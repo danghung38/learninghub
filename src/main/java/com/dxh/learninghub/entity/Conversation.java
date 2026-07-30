@@ -10,11 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(
-        name = "conversations",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_conversation_key",
-                columnNames = "conversation_key"))
+@Table(name = "conversations")
 @Getter
 @Setter
 @Builder
@@ -39,7 +35,7 @@ public class Conversation extends AbstractEntity<Long> {
     @JoinColumn(name = "course_id")
     Course course;
 
-    @Column(name = "conversation_key", length = 100)
+    @Column(name = "conversation_key", length = 100, unique = true)
     String conversationKey;
 
     @JsonIgnore
