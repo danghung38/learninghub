@@ -52,7 +52,7 @@ public class AwsS3Service {
         this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
     }
 
-    // --- Core Direct Upload ---
+    // --- Core Direct Upload
     public String uploadFile(MultipartFile file, String folder, UploadPolicy policy) {
         String fileName = FileUploadUtil.validate(file, policy);
         String objectKey = buildObjectKey(folder, UUID.randomUUID() + "_" + fileName);

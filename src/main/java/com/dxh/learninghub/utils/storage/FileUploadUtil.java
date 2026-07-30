@@ -32,7 +32,7 @@ public final class FileUploadUtil {
     private static String sanitizeFileName(String fileName, UploadPolicy policy) {
         if (fileName == null || fileName.isBlank()) throw new AppException(policy.getInvalidTypeError());
 
-        // Lấy tên file gốc (loại bỏ đường dẫn nếu có) và thay kí tự đặc biệt thành '_'
+        // Lấy tên file gốc (loại bỏ đường dẫn) và thay kí tự đặc biệt thành '_'
         String cleanName = fileName.substring(Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\')) + 1)
                 .replaceAll("[^a-zA-Z0-9._-]", "_");
 
