@@ -27,9 +27,7 @@ public interface WithdrawalRepository extends JpaRepository<Withdrawal, Long> {
             select w from Withdrawal w
             where (:status is null or w.status = :status)
             """)
-    Page<Withdrawal> findAllByStatus(
-            @Param("status") WithdrawalStatus status,
-            Pageable pageable);
+    Page<Withdrawal> findAllByStatus(@Param("status") WithdrawalStatus status, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"teacher", "bankAccount"})

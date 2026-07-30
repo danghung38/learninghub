@@ -15,8 +15,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 @Constraint(validatedBy = EnumValueValidator.class)
 public @interface EnumValue {
-    String name();
-    String message() default "{name} must be any of enum {enumClass}";
+    String name() default "";
+
+    // Trỏ thẳng đến mã lỗi chuẩn trong ErrorCode của bạn (Ví dụ: INVALID_DATA_TYPE hoặc INVALID_ENUM_VALUE)
+    String message() default "INVALID_ENUM_VALUE";
+
     Class<? extends Enum<?>> enumClass();
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};

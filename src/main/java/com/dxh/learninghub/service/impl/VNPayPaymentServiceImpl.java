@@ -226,13 +226,11 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             LocalDate from,
             LocalDate to,
             Pageable pageable) {
-        if (from != null && to != null && from.isAfter(to)) {
-            throw new AppException(ErrorCode.INVALID_DATE_RANGE);
-        }
+        if (from != null && to != null && from.isAfter(to)) throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+
         LocalDateTime fromDate = from == null ? null : from.atStartOfDay();
         LocalDateTime toDate = to == null ? null : to.plusDays(1).atStartOfDay();
-        Page<Payment> page = paymentRepository.findPayments(
-                userId, status, method, fromDate, toDate, pageable);
+        Page<Payment> page = paymentRepository.findPayments(userId, status, method, fromDate, toDate, pageable);
         return toPageResponse(page.map(this::toAdminResponse), pageable);
     }
 

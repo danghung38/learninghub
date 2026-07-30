@@ -1,5 +1,6 @@
 package com.dxh.learninghub.controller.admin;
 
+import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.ApiResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.UserResponse;
@@ -9,10 +10,12 @@ import com.dxh.learninghub.service.interfac.admin.AdminUserService;
 import com.dxh.learninghub.utils.PageUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -29,38 +32,29 @@ public class AdminTeacherController {
     AdminUserService adminUserService;
     AdminTeacherService adminTeacherService;
 
-    @Operation(summary = "Get all teachers", description = "Return a paginated list of teacher accounts")
+    @Operation(summary = "Get or search teachers", description = "Return a paginated list of teacher accounts with optional filters like fullName, username, banned, enabled")
     @GetMapping
-    public ApiResponse<PageResponse<UserResponse>> getAllTeachers(
+    public ApiResponse<PageResponse<UserResponse>> getAllOrSearchTeachers(
             @RequestParam(defaultValue = "1") Integer pageNo,
             @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String sortBy) {
+            @RequestParam(required = false) String sortBy,
+            @ParameterObject @ModelAttribute @Valid UserSearchFilterRequest filter) {
 
         Pageable pageable = createTeacherPageable(pageNo, pageSize, sortBy);
+
+        // Cố định role là "TEACHER", kết hợp các điều kiện lọc linh hoạt truyền từ filter lên
+        UserSearchFilterRequest teacherFilter = UserSearchFilterRequest.builder()
+                .username(filter != null ? filter.username() : null)
+                .fullName(filter != null ? filter.fullName() : null)
+                .role("TEACHER")
+                .banned(filter != null ? filter.banned() : null)
+                .enabled(filter != null ? filter.enabled() : null)
+                .build();
 
         return ApiResponse.<PageResponse<UserResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Successfully get teacher list")
-                .result(adminUserService.searchUsers(
-                        pageable, null, null, "TEACHER", null, null))
-                .build();
-    }
-
-    @Operation(summary = "Search teachers", description = "Search teacher accounts by name")
-    @GetMapping("/search")
-    public ApiResponse<PageResponse<UserResponse>> searchTeachers(
-            @RequestParam String fullName,
-            @RequestParam(defaultValue = "1") Integer pageNo,
-            @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String sortBy) {
-
-        Pageable pageable = createTeacherPageable(pageNo, pageSize, sortBy);
-
-        return ApiResponse.<PageResponse<UserResponse>>builder()
-                .code(HttpStatus.OK.value())
-                .message("Successfully search teachers")
-                .result(adminUserService.searchUsers(
-                        pageable, null, fullName, "TEACHER", null, null))
+                .result(adminUserService.searchUsers(pageable, teacherFilter))
                 .build();
     }
 

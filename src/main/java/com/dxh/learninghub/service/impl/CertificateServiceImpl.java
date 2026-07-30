@@ -8,7 +8,6 @@ import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.repo.CertificateRepository;
 import com.dxh.learninghub.repo.CourseRepository;
-import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.CertificatePdfGenerator;
 import com.dxh.learninghub.service.interfac.CertificateService;
 import com.dxh.learninghub.service.interfac.LearningProgressService;
@@ -35,18 +34,24 @@ public class CertificateServiceImpl implements CertificateService {
     LearningProgressService learningProgressService;
     CurrentUserProvider currentUserProvider;
     CertificatePdfGenerator pdfGenerator;
-    AwsS3Service awsS3Service;
 
     @Override
     @Transactional
-    public String getOrCreateDownloadUrl(Long courseId) {
+    public byte[] downloadCertificatePdf(Long courseId) {
         User user = currentUserProvider.getCurrentUser();
         Certificate certificate = certificateRepository.findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseGet(() -> createCertificate(user, courseId));
 
-        return awsS3Service.generateDownloadUrl(certificate.getObjectKey(),
-                certificate.getVerificationCode() + ".pdf");
+        // Render PDF trực tiếp từ dữ liệu trong DB
+        return pdfGenerator.generate(
+                certificate.getUser().getFullName(),
+                certificate.getCourse().getTitle(),
+                certificate.getCourse().getAuthor().getFullName(),
+                certificate.getIssueDate(),
+                certificate.getVerificationCode()
+        );
     }
+
 
     @Override
     @Transactional(readOnly = true)
@@ -71,20 +76,16 @@ public class CertificateServiceImpl implements CertificateService {
 
         Course course = courseRepository.findWithAuthorById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
-        LocalDate issueDate = LocalDate.now();
+
         String verificationCode = "LH-" + UUID.randomUUID().toString()
                 .replace("-", "").substring(0, 16).toUpperCase(Locale.ROOT);
-        byte[] pdf = pdfGenerator.generate(user.getFullName(), course.getTitle(),
-                course.getAuthor().getFullName(), issueDate, verificationCode);
-        String objectKey = awsS3Service.uploadCourseCertificate(
-                pdf, courseId, user.getId(), verificationCode);
 
+        // Chỉ save metadata vào DB
         return certificateRepository.save(Certificate.builder()
                 .verificationCode(verificationCode)
-                .issueDate(issueDate)
+                .issueDate(LocalDate.now())
                 .user(user)
                 .course(course)
-                .objectKey(objectKey)
                 .build());
     }
 }

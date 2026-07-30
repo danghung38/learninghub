@@ -8,8 +8,8 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "certificates", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_certificate_user_course", columnNames = {"user_id", "course_id"}),
-        @UniqueConstraint(name = "uk_certificate_verification_code", columnNames = "name")
+        // Cặp user + course là duy nhất (mỗi user chỉ có 1 chứng chỉ per course)
+        @UniqueConstraint(name = "uk_certificate_user_course", columnNames = {"user_id", "course_id"})
 })
 @Getter
 @Setter
@@ -19,7 +19,7 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Certificate extends AbstractEntity<Long> {
 
-    @Column(name = "name", nullable = false, length = 32)
+    @Column(name = "verification_code", nullable = false, unique = true, length = 32)
     String verificationCode;
 
     @Column(name = "issue_date", nullable = false)
@@ -32,7 +32,4 @@ public class Certificate extends AbstractEntity<Long> {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "course_id", nullable = false)
     Course course;
-
-    @Column(name = "object_key", nullable = false, length = 500)
-    String objectKey;
 }

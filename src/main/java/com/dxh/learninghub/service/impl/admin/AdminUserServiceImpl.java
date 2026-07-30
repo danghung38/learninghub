@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.impl.admin;
 
+import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.UserResponse;
 import com.dxh.learninghub.entity.Role;
@@ -10,6 +11,7 @@ import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.mapper.UserMapper;
 import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
+import com.dxh.learninghub.repo.specification.UserSpecification;
 import com.dxh.learninghub.service.interfac.admin.AdminUserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -132,16 +135,22 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public PageResponse<UserResponse> searchUsers(
-            Pageable pageable,
-            String username,
-            String fullName,
-            String role,
-            Boolean banned,
-            Boolean enabled) {
-        String normalizedRole = normalize(role) == null ? null : parseRole(role).name();
-        Page<User> users = userRepository.searchUsers(
-                normalize(username), normalize(fullName), normalizedRole, banned, enabled, pageable);
+    public PageResponse<UserResponse> searchUsers(Pageable pageable, UserSearchFilterRequest filter) {
+        // Tránh lỗi null pointer nếu lỡ không truyền filter
+        String normalizedRole = null;
+        if (filter != null && filter.role() != null && !filter.role().isBlank()) {
+            normalizedRole = parseRole(filter.role()).name();
+        }
+
+        String username = filter != null ? filter.username() : null;
+        String fullName = filter != null ? filter.fullName() : null;
+        Boolean banned = filter != null ? filter.banned() : null;
+        Boolean enabled = filter != null ? filter.enabled() : null;
+
+        // 1. Tạo Specification từ DTO Filter
+        Specification<User> spec = UserSpecification.getUsersWithFilter(filter);
+        // 2. Thực thi tìm kiếm với pageable gốc
+        Page<User> users = userRepository.findAll(spec, pageable);
         return toPageResponse(users);
     }
 
@@ -153,11 +162,9 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     private PageResponse<UserResponse> toPageResponse(Page<User> page) {
-        List<Long> userIds = page.stream().map(User::getId).toList();
-        Map<Long, User> usersById = userRepository.findAllByIdIn(userIds).stream()
-                .collect(java.util.stream.Collectors.toMap(User::getId, user -> user));
-        List<UserResponse> responses = userIds.stream()
-                .map(usersById::get)
+        // Nhờ có @BatchSize(size = 20) trên User.roles,
+        // việc map trực tiếp qua userMapper bên dưới sẽ KHÔNG BỊ N+1!
+        List<UserResponse> responses = page.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
 

@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,14 +28,17 @@ public class CertificateController {
 
     CertificateService certificateService;
 
-    @Operation(summary = "Download a certificate", description = "Create the course certificate when needed and redirect to its download URL")
+    @Operation(summary = "Download a certificate", description = "Create the course certificate when needed and download the PDF file directly")
     @GetMapping("/courses/{courseId}/download")
-    ResponseEntity<Void> download(@PathVariable Long courseId) {
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(certificateService.getOrCreateDownloadUrl(courseId)))
-                .build();
-    }
+    public ResponseEntity<byte[]> download(@PathVariable Long courseId) {
+        byte[] pdfBytes = certificateService.downloadCertificatePdf(courseId);
 
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"certificate-course-" + courseId + ".pdf\"")
+                .body(pdfBytes);
+    }
     @Operation(summary = "Verify a certificate", description = "Verify a certificate using its public verification code")
     @GetMapping("/verify/{verificationCode}")
     ApiResponse<CertificateVerificationResponse> verify(@PathVariable String verificationCode) {

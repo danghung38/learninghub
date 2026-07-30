@@ -220,7 +220,7 @@ public class UserServiceImpl implements UserService {
         String oldAvatar = null;
         if (file != null && !file.isEmpty()) {
             oldAvatar = user.getAvatar();
-            user.setAvatar(awsS3Service.uploadAvatar(file, user.getId()));
+            awsS3Service.uploadFile(file, "avatars/" + user.getId(), UploadPolicy.AVATAR);
         }
 
         UserUpdateResponse response = userMapper.toUserUpdateResponse(userRepository.save(user));

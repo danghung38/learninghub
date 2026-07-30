@@ -12,8 +12,5 @@ import java.util.List;
 @Repository
 public interface RedisVerificationTokenRepository extends CrudRepository<RedisVerificationToken, String> {
 
-    // Xóa token cũ của user trước khi tạo mới
-    void deleteByUserIdAndVerifyType(Long userId, VerifyType verifyType);
-
     List<RedisVerificationToken> findByUserIdAndVerifyType(Long userId, VerifyType verifyType);
 }

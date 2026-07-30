@@ -42,6 +42,8 @@ public enum ErrorCode {
     INVALID_SORT_DIRECTION(1014, "Sort direction must be asc or desc", HttpStatus.BAD_REQUEST),
     INVALID_FILE_SIZE(1015, "File size must be greater than 0", HttpStatus.BAD_REQUEST),
     INVALID_URL(1016, "Invalid URL", HttpStatus.BAD_REQUEST),
+    INVALID_ROLE_ENUM(1017, "Invalid enum value. Allowed values are from {ADMIN,TEACHER,USER}", HttpStatus.BAD_REQUEST),
+    INVALID_ENUM_VALUE(1018, "Invalid enum value. Allowed values are from {enumClass}", HttpStatus.BAD_REQUEST),
 
     UNAUTHENTICATED(1100, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1101, "You do not have permission", HttpStatus.FORBIDDEN),
@@ -91,32 +93,19 @@ public enum ErrorCode {
     COURSE_ALREADY_DELEDED(1306, "Course is already soft-deleted", HttpStatus.BAD_REQUEST),
     COURSE_DELEDED_READ_ONLY(1307, "Soft-deleted courses cannot be modified", HttpStatus.CONFLICT),
     COURSE_NOT_BANNED(1308, "Course is not banned", HttpStatus.BAD_REQUEST),
-    COURSE_BANNED_CANNOT_DELETE(
-            1309,
-            "A banned course cannot be soft-deleted by its owner",
-            HttpStatus.CONFLICT),
-    COURSE_NOT_DRAFT(
-            1310,
-            "Only a draft course can be submitted for approval",
-            HttpStatus.CONFLICT),
-    COURSE_NOT_PENDING(
-            1311,
-            "Only a pending course can be approved or rejected",
-            HttpStatus.CONFLICT),
-    COURSE_CONTENT_INCOMPLETE(
-            1312,
-            "A course must contain at least one chapter and one lesson before submission",
-            HttpStatus.BAD_REQUEST),
+    COURSE_BANNED_CANNOT_DELETE(1309, "A banned course cannot be soft-deleted by its owner", HttpStatus.CONFLICT),
+    COURSE_NOT_DRAFT(1310, "Only a draft course can be submitted for approval", HttpStatus.CONFLICT),
+    COURSE_NOT_PENDING(1311, "Only a pending course can be approved or rejected", HttpStatus.CONFLICT),
+    COURSE_CONTENT_INCOMPLETE(1312, "A course must contain at least one chapter and one lesson before submission", HttpStatus.BAD_REQUEST),
+    INVALID_COURSE_LEVEL(1313, "Invalid course level. Allowed values are from {BEGINNER,ADVANCED,EXPERT}", HttpStatus.BAD_REQUEST),
+    INVALID_COURSE_STATUS(1314, "Invalid course status. Allowed values are from {DRAFT,PENDING,APPROVED,REJECTED,BANNED,DELEDED}", HttpStatus.BAD_REQUEST),
 
     CHAPTER_NOT_EXISTED(1400, "Chapter not existed", HttpStatus.NOT_FOUND),
     NOT_CHAPTER_OWNER(1401, "You are not the owner of this chapter", HttpStatus.FORBIDDEN),
 
     LESSON_NOT_EXISTED(1500, "Lesson not existed", HttpStatus.NOT_FOUND),
     LESSON_ACCESS_DENIED(1501, "You do not have access to this lesson", HttpStatus.FORBIDDEN),
-    LESSON_CROSS_COURSE_MOVE_NOT_ALLOWED(
-            1502,
-            "A lesson can only be moved between chapters in the same course",
-            HttpStatus.BAD_REQUEST),
+    LESSON_CROSS_COURSE_MOVE_NOT_ALLOWED(1502, "A lesson can only be moved between chapters in the same course", HttpStatus.BAD_REQUEST),
 
     FAVORITE_NOT_EXISTED(1600, "Favorite not existed", HttpStatus.NOT_FOUND),
     ALREADY_IN_FAVORITES(1601, "Course already in favorites", HttpStatus.BAD_REQUEST),

@@ -2,6 +2,7 @@ package com.dxh.learninghub.service.impl;
 
 
 import com.dxh.learninghub.constant.CacheNames;
+import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.request.CourseUploadRequest;
 import com.dxh.learninghub.dto.request.CourseUpdateRequest;
 import com.dxh.learninghub.dto.response.CoursePreviewResponse;
@@ -19,7 +20,7 @@ import com.dxh.learninghub.mapper.CourseMapper;
 import com.dxh.learninghub.repo.CourseRepository;
 import com.dxh.learninghub.repo.LessonRepository;
 import com.dxh.learninghub.repo.UserRepository;
-import com.dxh.learninghub.repo.specification.CourseSpecifications;
+import com.dxh.learninghub.repo.specification.CourseSpecification;
 import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.interfac.CourseService;
 import com.dxh.learninghub.service.interfac.NotificationService;
@@ -119,7 +120,9 @@ public class CourseServiceImpl implements CourseService {
         User teacher = currentUserProvider.getCurrentUser();
 
         Course course = courseMapper.courseUploadToCourse(request);
-        course.setThumbnail(awsS3Service.uploadCourseThumbnail(thumbnail, teacher.getId()));
+        course.setThumbnail(awsS3Service.uploadFile(thumbnail,
+                "courses/" + teacher.getId() + "/thumbnails",
+                UploadPolicy.IMAGE));
         course.setAuthor(teacher);
         course.setStatus(CourseStatus.DRAFT);
 
@@ -151,8 +154,9 @@ public class CourseServiceImpl implements CourseService {
         boolean hasNewThumbnail = thumbnail != null && !thumbnail.isEmpty();
 
         if (hasNewThumbnail) {
-            course.setThumbnail(awsS3Service.uploadCourseThumbnail(
-                    thumbnail, course.getAuthor().getId()));
+            course.setThumbnail(awsS3Service.uploadFile(thumbnail,
+                    "courses/" + course.getAuthor().getId() + "/thumbnails",
+                    UploadPolicy.IMAGE));
         }
 
         boolean editableLifecycle = oldStatus != CourseStatus.DELEDED
@@ -228,10 +232,11 @@ public class CourseServiceImpl implements CourseService {
             cacheNames = CacheNames.COURSE_LIST,
             keyGenerator = "courseListKeyGenerator",
             sync = true)
-    public PageResponse<CourseResponse> searchCourses(Pageable pageable, String[] course, String[] author) {
+    public PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter) {
         Page<Course> courses = courseRepository.findAll(
-                CourseSpecifications.publicSearch(course, author),
+                CourseSpecification.publicSearch(filter),
                 pageable);
+
         return PageResponse.<CourseResponse>builder()
                 .pageNo(pageable.getPageNumber() + 1)
                 .pageSize(pageable.getPageSize())

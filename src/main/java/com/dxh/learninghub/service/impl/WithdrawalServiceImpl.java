@@ -177,8 +177,9 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         FileUploadUtil.validate(file, UploadPolicy.PAYMENT_PROOF);
         Withdrawal withdrawal = findPendingWithdrawalForUpdate(withdrawalId);
         User admin = currentUserProvider.getCurrentUser();
-        String paymentProofObjectKey = awsS3Service
-                .uploadWithdrawalPaymentProof(file, admin.getId());
+        String paymentProofObjectKey = awsS3Service.uploadFile(file,
+                "withdrawals/" + admin.getId() + "/payment-proofs",
+                UploadPolicy.PAYMENT_PROOF);
 
         withdrawal.setStatus(WithdrawalStatus.PAID);
         withdrawal.setPaymentProofUrl(paymentProofObjectKey);
