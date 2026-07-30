@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Learning Hub Certificate of Completion</title>
+    <style>
+        @page { size: A4 landscape; margin: 0; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: CertificateFont, Arial, sans-serif; color: #0c1524; }
+        .certificate {
+            width: 297mm;
+            height: 210mm;
+            padding: 12mm;
+            background: #f8f6f1;
+        }
+        .frame {
+            height: 184mm;
+            border: 1px solid #c69a4b;
+            padding: 8mm 16mm;
+            text-align: center;
+        }
+        .brand { text-align: left; color: #c69a4b; font-size: 13px; letter-spacing: 2px; }
+        .eyebrow { margin: 8mm 0 2mm; color: #c69a4b; font-size: 11px; letter-spacing: 5px; }
+        h1 { margin: 0 0 7mm; font-size: 30px; letter-spacing: 2px; text-transform: uppercase; }
+        .label, .description { color: #6b7385; font-size: 13px; }
+        .recipient { margin: 3mm 0; font-size: 36px; font-weight: bold; font-style: italic; }
+        .gold-line { width: 28mm; margin: 0 auto 4mm; border-top: 2px solid #c69a4b; }
+        .course { margin: 4mm 0 8mm; font-size: 21px; font-weight: bold; }
+        .seal {
+            width: 18mm; height: 18mm; line-height: 18mm; margin: 0 auto 7mm;
+            border: 2px solid #c69a4b; border-radius: 50%; background: #0c1524;
+            color: #f4ead8; font-size: 20px; font-weight: bold;
+        }
+        .footer { width: 100%; border-collapse: collapse; }
+        .footer td { width: 50%; padding: 0 15mm; text-align: center; }
+        .footer-value { border-top: 1px solid #dcd5c4; padding-top: 3mm; font-size: 15px; }
+        .footer-label { margin-top: 2mm; color: #6b7385; font-size: 9px; letter-spacing: 2px; }
+        .verification { margin-top: 7mm; color: #6b7385; font-size: 9px; }
+        .verification strong { color: #0c1524; }
+    </style>
+</head>
+<body>
+<div class="certificate">
+    <div class="frame">
+        <div class="brand">LEARNING HUB</div>
+        <div class="eyebrow">AWARDED TO</div>
+        <h1>Certificate of Completion</h1>
+        <div class="label">This certifies that</div>
+        <div class="recipient" th:text="${recipient}">Recipient Name</div>
+        <div class="gold-line"></div>
+        <div class="description">has successfully completed the course</div>
+        <div class="course" th:text="${courseName}">Course Name</div>
+        <div class="seal">LH</div>
+        <table class="footer">
+            <tr>
+                <td>
+                    <div class="footer-value" th:text="${author}">Instructor Name</div>
+                    <div class="footer-label">INSTRUCTOR</div>
+                </td>
+                <td>
+                    <div class="footer-value" th:text="${issueDate}">Completion Date</div>
+                    <div class="footer-label">DATE</div>
+                </td>
+            </tr>
+        </table>
+        <div class="verification">
+            Verification code: <strong th:text="${verificationCode}">LH-CODE</strong>
+            &nbsp;|&nbsp; Verify at: <span th:text="${verificationPath}">/certificates/verify/code</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>
