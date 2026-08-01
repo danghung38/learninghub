@@ -22,6 +22,8 @@ import com.dxh.learninghub.utils.storage.UploadPolicy;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +45,10 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     NotificationService notificationService;
     EmailService emailService;
 
+    @NonFinal
+    @Value("${app.frontend-url:http://localhost:5173}")
+    String frontendUrl;
+
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
@@ -52,6 +58,7 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         Advertisement advertisement = advertisementMapper.toEntity(request);
         advertisement.setCourse(findCourse(request.courseId()));
         advertisement.setImage(awsS3Service.uploadFile(image, "advertisements", UploadPolicy.IMAGE));
+        advertisement.setLink(buildCourseLink(advertisement.getCourse()));
         advertisement.setActive(true);
         advertisement.setSent(false);
         return advertisementMapper.toResponse(advertisementRepository.save(advertisement));
@@ -66,9 +73,7 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         Advertisement advertisement = findAdvertisement(id);
         String oldImage = advertisement.getImage();
         advertisementMapper.update(request, advertisement);
-        if (request.courseId() != null) {
-            advertisement.setCourse(findCourse(request.courseId()));
-        }
+        advertisement.setCourse(findCourse(request.courseId()));
 
         if (advertisement.getCourse() != null
                 && advertisement.getCourse().getStatus() != CourseStatus.APPROVED) {
@@ -80,6 +85,8 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         if (hasNewImage) {
             advertisement.setImage(awsS3Service.uploadFile(image, "advertisements", UploadPolicy.IMAGE));
         }
+
+        advertisement.setLink(buildCourseLink(advertisement.getCourse()));
 
         // Editing the content creates a new delivery version.
         advertisement.setSent(false);
@@ -119,6 +126,7 @@ public class AdvertisementServiceImpl implements AdvertisementService {
 
         return advertisementRepository.searchAdvertisements(active, sent, normalizedTitle)
                 .stream()
+                .map(this::refreshGeneratedLink)
                 .map(advertisementMapper::toResponse)
                 .toList();
     }
@@ -129,6 +137,7 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         return advertisementRepository
                 .findActiveAdvertisements()
                 .stream()
+                .map(this::refreshGeneratedLink)
                 .map(advertisementMapper::toResponse)
                 .toList();
     }
@@ -208,14 +217,29 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     }
 
     private Course findCourse(Long courseId) {
-        if (courseId == null) return null;
         return courseRepository.findPublicCourseById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_AVAILABLE));
     }
 
+    private String buildCourseLink(Course course) {
+        String baseUrl = frontendUrl == null ? "" : frontendUrl.strip();
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl + "/courses/" + course.getId();
+    }
+
     private Advertisement findAdvertisement(Long id) {
-        return advertisementRepository.findWithCourseById(id)
+        Advertisement advertisement = advertisementRepository.findWithCourseById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ADVERTISEMENT_NOT_EXISTED));
+        return refreshGeneratedLink(advertisement);
+    }
+
+    private Advertisement refreshGeneratedLink(Advertisement advertisement) {
+        if (advertisement.getCourse() != null) {
+            advertisement.setLink(buildCourseLink(advertisement.getCourse()));
+        }
+        return advertisement;
     }
 
 

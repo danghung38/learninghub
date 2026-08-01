@@ -3,6 +3,9 @@ server:
   servlet:
     context-path: /api/v1
 
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
 spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE}
