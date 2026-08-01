@@ -83,4 +83,18 @@ public class ConversationController {
                 .result(chatService.getOrCreateCourseQaConversation(courseId))
                 .build();
     }
+
+    @Operation(
+            summary = "Open a course student conversation",
+            description = "Create or return a conversation between the course manager and an enrolled student")
+    @PostMapping("/course/{courseId}/students/{studentId}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<ConversationResponse> createCourseStudentConversation(
+            @PathVariable Long courseId,
+            @PathVariable Long studentId) {
+        return ApiResponse.<ConversationResponse>builder()
+                .code(HttpStatus.CREATED.value())
+                .result(chatService.getOrCreateCourseStudentConversation(courseId, studentId))
+                .build();
+    }
 }

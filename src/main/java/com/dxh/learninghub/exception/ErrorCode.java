@@ -162,7 +162,8 @@ public enum ErrorCode {
     CERTIFICATE_GENERATION_FAILED(2602, "Failed to generate certificate", HttpStatus.INTERNAL_SERVER_ERROR),
 
     ADVERTISEMENT_NOT_EXISTED(2700, "Advertisement not existed", HttpStatus.NOT_FOUND),
-    INVALID_ADVERTISEMENT_DATE_RANGE(2701, "Start date must not be after end date", HttpStatus.BAD_REQUEST);
+    INVALID_ADVERTISEMENT_DATE_RANGE(2701, "Start date must not be after end date", HttpStatus.BAD_REQUEST),
+    ADVERTISEMENT_ALREADY_SENT(2702, "Advertisement has already been sent", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

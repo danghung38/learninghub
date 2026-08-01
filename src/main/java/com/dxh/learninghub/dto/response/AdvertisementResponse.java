@@ -14,5 +14,6 @@ public record AdvertisementResponse(
         LocalDate startDate,
         LocalDate endDate,
         boolean active,
+        boolean sent,
         LocalDateTime createdAt) {
 }

@@ -116,6 +116,50 @@ public class ChatServiceImpl implements ChatService {
         return toConversationResponse(conversation, currentUser.getId(), null, null);
     }
 
+    @Override
+    @Transactional
+    public ConversationResponse getOrCreateCourseStudentConversation(Long courseId, Long studentId) {
+        User currentUser = currentUserProvider.getCurrentUser();
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> RoleEnum.ADMIN.name().equals(role.getName()));
+        boolean isCourseOwner = course.getAuthor() != null
+                && Objects.equals(course.getAuthor().getId(), currentUser.getId());
+
+        if (!isAdmin && !isCourseOwner) {
+            throw new AppException(ErrorCode.NOT_COURSE_OWNER);
+        }
+        if (Objects.equals(currentUser.getId(), student.getId())) {
+            throw new AppException(ErrorCode.CANNOT_CHAT_WITH_YOURSELF);
+        }
+
+        boolean enrolled = enrollmentRepository.existsByUserAndCourseAndStatusIn(
+                student,
+                course,
+                COURSE_CHAT_STATUSES);
+        if (!enrolled) {
+            throw new AppException(ErrorCode.COURSE_CHAT_REQUIRES_ENROLLMENT);
+        }
+
+        Conversation conversation = conversationRepository
+                .findExisting(ConversationType.COURSE_QA, currentUser, student, courseId)
+                .orElseGet(() -> conversationRepository.save(
+                        Conversation.builder()
+                                .type(ConversationType.COURSE_QA)
+                                .initiator(currentUser)
+                                .partner(student)
+                                .course(course)
+                                .build()
+                ));
+
+        return toConversationResponse(conversation, currentUser.getId(), null, null);
+    }
+
     @Transactional(readOnly = true)
     public List<ConversationResponse> getMyConversations() {
         User currentUser = currentUserProvider.getCurrentUser();

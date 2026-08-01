@@ -5,14 +5,18 @@ import com.dxh.learninghub.dto.request.AdvertisementUpdateRequest;
 import com.dxh.learninghub.dto.response.AdvertisementResponse;
 import com.dxh.learninghub.entity.Advertisement;
 import com.dxh.learninghub.entity.Course;
+import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.CourseStatus;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.mapper.AdvertisementMapper;
 import com.dxh.learninghub.repo.AdvertisementRepository;
 import com.dxh.learninghub.repo.CourseRepository;
+import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.AwsS3Service;
+import com.dxh.learninghub.service.EmailService;
 import com.dxh.learninghub.service.interfac.AdvertisementService;
+import com.dxh.learninghub.service.interfac.NotificationService;
 import com.dxh.learninghub.utils.storage.FileUploadUtil;
 import com.dxh.learninghub.utils.storage.UploadPolicy;
 import lombok.AccessLevel;
@@ -35,6 +39,9 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     CourseRepository courseRepository;
     AdvertisementMapper advertisementMapper;
     AwsS3Service awsS3Service;
+    UserRepository userRepository;
+    NotificationService notificationService;
+    EmailService emailService;
 
     @Override
     @Transactional
@@ -44,9 +51,9 @@ public class AdvertisementServiceImpl implements AdvertisementService {
 
         Advertisement advertisement = advertisementMapper.toEntity(request);
         advertisement.setCourse(findCourse(request.courseId()));
-        //  Dùng hàm uploadFile chung folder "advertisements"
         advertisement.setImage(awsS3Service.uploadFile(image, "advertisements", UploadPolicy.IMAGE));
         advertisement.setActive(true);
+        advertisement.setSent(false);
         return advertisementMapper.toResponse(advertisementRepository.save(advertisement));
     }
 
@@ -63,16 +70,19 @@ public class AdvertisementServiceImpl implements AdvertisementService {
             advertisement.setCourse(findCourse(request.courseId()));
         }
 
-        if (advertisement.getCourse() != null && advertisement.getCourse().getStatus() != CourseStatus.APPROVED) {
+        if (advertisement.getCourse() != null
+                && advertisement.getCourse().getStatus() != CourseStatus.APPROVED) {
             throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE);
         }
         validateDateRange(advertisement.getStartDate(), advertisement.getEndDate());
 
         boolean hasNewImage = image != null && !image.isEmpty();
         if (hasNewImage) {
-            //  Dùng hàm uploadFile chung folder "advertisements"
             advertisement.setImage(awsS3Service.uploadFile(image, "advertisements", UploadPolicy.IMAGE));
         }
+
+        // Editing the content creates a new delivery version.
+        advertisement.setSent(false);
 
         Advertisement savedAdvertisement = advertisementRepository.save(advertisement);
         if (hasNewImage) {
@@ -91,6 +101,29 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     }
 
     @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public AdvertisementResponse activate(Long id) {
+        Advertisement advertisement = findAdvertisement(id);
+        advertisement.setActive(true);
+        return advertisementMapper.toResponse(advertisement);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public List<AdvertisementResponse> getAllAdvertisements(Boolean active, Boolean sent, String title) {
+        String normalizedTitle = title == null || title.isBlank()
+                ? null
+                : title.trim();
+
+        return advertisementRepository.searchAdvertisements(active, sent, normalizedTitle)
+                .stream()
+                .map(advertisementMapper::toResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<AdvertisementResponse> getActiveAdvertisements() {
         return advertisementRepository
@@ -100,6 +133,80 @@ public class AdvertisementServiceImpl implements AdvertisementService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public AdvertisementResponse sendNotification(Long id) {
+        Advertisement advertisement = findAdvertisement(id);
+        if (advertisement.isSent()) {
+            throw new AppException(ErrorCode.ADVERTISEMENT_ALREADY_SENT);
+        }
+
+        String title = "New announcement: " + advertisement.getTitle();
+        String message = advertisement.getDescription() == null
+                || advertisement.getDescription().isBlank()
+                ? "Discover the latest update from Learning Hub."
+                : advertisement.getDescription().trim();
+
+        for (User user : userRepository.findAllByEnabledTrueAndBannedFalse()) {
+            notificationService.createNotification(
+                    user,
+                    null,
+                    title,
+                    message,
+                    advertisement.getLink());
+
+            emailService.sendAdvertisementEmail(
+                    user.getEmail(),
+                    user.getFullName() == null ? user.getUsername() : user.getFullName(),
+                    advertisement.getTitle(),
+                    message,
+                    advertisement.getLink());
+        }
+
+        // Kafka migration point: publish one advertisement event here later.
+        advertisement.setSent(true);
+        return advertisementMapper.toResponse(advertisement);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public void sendTestNotification(Long advertisementId, String email) {
+        Advertisement advertisement = findAdvertisement(advertisementId);
+        User user = userRepository.findByEmail(email.trim())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        String title = "New announcement: " + advertisement.getTitle();
+        String message = advertisement.getDescription() == null
+                || advertisement.getDescription().isBlank()
+                ? "Discover the latest update from Learning Hub."
+                : advertisement.getDescription().trim();
+
+        notificationService.createNotification(
+                user,
+                null,
+                title,
+                message,
+                advertisement.getLink());
+
+        emailService.sendAdvertisementEmail(
+                user.getEmail(),
+                user.getFullName() == null ? user.getUsername() : user.getFullName(),
+                advertisement.getTitle(),
+                message,
+                advertisement.getLink());
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public AdvertisementResponse resetSent(Long id) {
+        Advertisement advertisement = findAdvertisement(id);
+        advertisement.setSent(false);
+        return advertisementMapper.toResponse(advertisement);
+    }
+
     private Course findCourse(Long courseId) {
         if (courseId == null) return null;
         return courseRepository.findPublicCourseById(courseId)
@@ -107,7 +214,7 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     }
 
     private Advertisement findAdvertisement(Long id) {
-        return advertisementRepository.findById(id)
+        return advertisementRepository.findWithCourseById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ADVERTISEMENT_NOT_EXISTED));
     }
 
