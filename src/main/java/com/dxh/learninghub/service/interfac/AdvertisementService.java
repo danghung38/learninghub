@@ -26,4 +26,6 @@ public interface AdvertisementService {
     void sendTestNotification(Long advertisementId, String email);
 
     AdvertisementResponse resetSent(Long id);
+
+    void delete(Long id);
 }

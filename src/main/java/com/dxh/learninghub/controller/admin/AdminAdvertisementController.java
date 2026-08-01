@@ -109,4 +109,13 @@ public class AdminAdvertisementController {
                 .result(advertisementService.resetSent(id))
                 .build();
     }
+
+    @Operation(summary = "Delete an advertisement", description = "Delete an advertisement and its image from storage")
+    @DeleteMapping("/{id}")
+    ApiResponse<Void> delete(@PathVariable Long id) {
+        advertisementService.delete(id);
+        return ApiResponse.<Void>builder()
+                .message("Delete advertisement successfully")
+                .build();
+    }
 }

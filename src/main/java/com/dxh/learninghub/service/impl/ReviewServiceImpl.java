@@ -79,7 +79,7 @@ public class ReviewServiceImpl implements ReviewService {
                 user,
                 "New course review",
                 user.getFullName() + " reviewed \"" + course.getTitle() + "\"",
-                "/courses/" + course.getId() + "/reviews");
+                "/courses/" + course.getId());
 
         return reviewMapper.toReviewResponse(savedReview);
     }
@@ -110,7 +110,7 @@ public class ReviewServiceImpl implements ReviewService {
                     currentUser,
                     "New reply to your review",
                     currentUser.getFullName() + " replied to your review",
-                    "/courses/" + parent.getCourse().getId() + "/reviews");
+                    "/courses/" + parent.getCourse().getId());
         }
 
         return withReplies(reviewMapper.toReviewResponse(savedReply), List.of());

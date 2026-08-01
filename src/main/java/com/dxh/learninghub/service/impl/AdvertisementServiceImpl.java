@@ -156,6 +156,7 @@ public class AdvertisementServiceImpl implements AdvertisementService {
                 || advertisement.getDescription().isBlank()
                 ? "Discover the latest update from Learning Hub."
                 : advertisement.getDescription().trim();
+        String courseLink = buildFrontendUrl(advertisement.getLink());
 
         for (User user : userRepository.findAllByEnabledTrueAndBannedFalse()) {
             notificationService.createNotification(
@@ -163,14 +164,14 @@ public class AdvertisementServiceImpl implements AdvertisementService {
                     null,
                     title,
                     message,
-                    advertisement.getLink());
+                    courseLink);
 
-            emailService.sendAdvertisementEmail(
-                    user.getEmail(),
-                    user.getFullName() == null ? user.getUsername() : user.getFullName(),
-                    advertisement.getTitle(),
-                    message,
-                    advertisement.getLink());
+//            emailService.sendAdvertisementEmail(
+//                    user.getEmail(),
+//                    user.getFullName() == null ? user.getUsername() : user.getFullName(),
+//                    advertisement.getTitle(),
+//                    message,
+//                    courseLink);
         }
 
         // Kafka migration point: publish one advertisement event here later.
@@ -191,20 +192,21 @@ public class AdvertisementServiceImpl implements AdvertisementService {
                 || advertisement.getDescription().isBlank()
                 ? "Discover the latest update from Learning Hub."
                 : advertisement.getDescription().trim();
+        String courseLink = buildFrontendUrl(advertisement.getLink());
 
         notificationService.createNotification(
                 user,
                 null,
                 title,
                 message,
-                advertisement.getLink());
+                courseLink);
 
         emailService.sendAdvertisementEmail(
                 user.getEmail(),
                 user.getFullName() == null ? user.getUsername() : user.getFullName(),
                 advertisement.getTitle(),
                 message,
-                advertisement.getLink());
+                courseLink);
     }
 
     @Override
@@ -216,17 +218,34 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         return advertisementMapper.toResponse(advertisement);
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public void delete(Long id) {
+        Advertisement advertisement = findAdvertisement(id);
+        advertisementRepository.delete(advertisement);
+        awsS3Service.deleteFileFromS3(advertisement.getImage());
+    }
+
     private Course findCourse(Long courseId) {
         return courseRepository.findPublicCourseById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_AVAILABLE));
     }
 
     private String buildCourseLink(Course course) {
+        return "/courses/" + course.getId();
+    }
+
+    private String buildFrontendUrl(String path) {
         String baseUrl = frontendUrl == null ? "" : frontendUrl.strip();
         while (baseUrl.endsWith("/")) {
             baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
         }
-        return baseUrl + "/courses/" + course.getId();
+
+        if (path == null || path.isBlank()) {
+            return baseUrl;
+        }
+        return baseUrl + (path.startsWith("/") ? path : "/" + path);
     }
 
     private Advertisement findAdvertisement(Long id) {
