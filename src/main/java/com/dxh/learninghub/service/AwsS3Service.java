@@ -106,7 +106,7 @@ public class AwsS3Service {
 
     @Named("generateViewUrl")
     public String generateViewUrl(String objectKey) {
-        return getPresignedGetUrl(objectKey, Duration.ofDays(7), null);
+        return getPresignedGetUrl(objectKey, Duration.ofDays(7),  null);
     }
 
     @Named("generateLessonViewUrl")
