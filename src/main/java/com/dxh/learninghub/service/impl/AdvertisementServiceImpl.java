@@ -40,7 +40,6 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public AdvertisementResponse create(AdvertisementCreationRequest request, MultipartFile image) {
-        FileUploadUtil.validate(image, UploadPolicy.IMAGE);
         validateDateRange(request.startDate(), request.endDate());
 
         Advertisement advertisement = advertisementMapper.toEntity(request);
