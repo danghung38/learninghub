@@ -1,6 +1,8 @@
 package com.dxh.learninghub.service.impl;
 
+import com.dxh.learninghub.dto.response.CertificateResponse;
 import com.dxh.learninghub.dto.response.CertificateVerificationResponse;
+import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.entity.Certificate;
 import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.User;
@@ -8,6 +10,7 @@ import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.repo.CertificateRepository;
 import com.dxh.learninghub.repo.CourseRepository;
+import com.dxh.learninghub.mapper.CertificateMapper;
 import com.dxh.learninghub.service.CertificatePdfGenerator;
 import com.dxh.learninghub.service.interfac.CertificateService;
 import com.dxh.learninghub.service.interfac.LearningProgressService;
@@ -17,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -34,6 +39,22 @@ public class CertificateServiceImpl implements CertificateService {
     LearningProgressService learningProgressService;
     CurrentUserProvider currentUserProvider;
     CertificatePdfGenerator pdfGenerator;
+    CertificateMapper certificateMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CertificateResponse> getMyCertificates(Pageable pageable) {
+        User user = currentUserProvider.getCurrentUser();
+        Page<Certificate> page = certificateRepository.findAllByUserId(user.getId(), pageable);
+
+        return PageResponse.<CertificateResponse>builder()
+                .pageNo(pageable.getPageNumber() + 1)
+                .pageSize(page.getSize())
+                .totalPage(page.getTotalPages())
+                .totalElements(page.getTotalElements())
+                .items(page.stream().map(certificateMapper::toResponse).toList())
+                .build();
+    }
 
     @Override
     @Transactional
@@ -60,13 +81,7 @@ public class CertificateServiceImpl implements CertificateService {
                         verificationCode.trim().toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new AppException(ErrorCode.CERTIFICATE_NOT_EXISTED));
 
-        return new CertificateVerificationResponse(
-                certificate.getVerificationCode(),
-                certificate.getUser().getFullName(),
-                certificate.getCourse().getTitle(),
-                certificate.getCourse().getAuthor().getFullName(),
-                certificate.getIssueDate(),
-                true);
+        return certificateMapper.toVerificationResponse(certificate);
     }
 
     private Certificate createCertificate(User user, Long courseId) {

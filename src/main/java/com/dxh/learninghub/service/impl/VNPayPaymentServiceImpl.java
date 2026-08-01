@@ -138,10 +138,10 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             notificationService.createNotification(
                     payment.getUser(),
                     null,
-                    "Nạp điểm không thành công",
+                    "Top-up Failed",
                     failureNotificationMessage(payment),
                     "/dashboard/wallet"
-                    //for fe
+                    // for fe
             );
             log.info("VNPAY deposit {} failed with response code {}",
                     payment.getMerchantTransactionRef(), payment.getResponseCode());
@@ -173,10 +173,10 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         notificationService.createNotification(
                 user,
                 null,
-                "Nạp điểm thành công",
-                "Giao dịch " + payment.getMerchantTransactionRef()
-                        + " đã cộng " + payment.getPointsReceived()
-                        + " điểm vào tài khoản của bạn",
+                "Top-up Successful",
+                "Transaction " + payment.getMerchantTransactionRef()
+                        + " has added " + payment.getPointsReceived()
+                        + " points to your account",
                 "/dashboard/wallet"
         );
 
