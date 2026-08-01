@@ -30,8 +30,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -212,16 +210,22 @@ public class ReviewServiceImpl implements ReviewService {
     @Transactional(readOnly = true)
     public RatingSummaryResponse getRatingSummary(Long courseId) {
         findApprovedCourse(courseId);
-        Object[] summary = reviewRepository.getRatingSummary(courseId);
 
-        long total = number(summary[0]).longValue();
-        double average = BigDecimal.valueOf(number(summary[1]).doubleValue())
-                .setScale(1, RoundingMode.HALF_UP)
-                .doubleValue();
+        long total = reviewRepository.countByCourseIdAndParentReviewIsNull(courseId);
+        double average = total == 0
+                ? 5.0
+                : Math.round(reviewRepository.getAverageRating(courseId) * 10.0) / 10.0;
 
         Map<Integer, Long> distribution = new LinkedHashMap<>();
         for (int rating = 1; rating <= 5; rating++) {
-            distribution.put(rating, number(summary[rating + 1]).longValue());
+            distribution.put(rating, 0L);
+        }
+        for (Object[] row : reviewRepository.getRatingDistribution(courseId)) {
+            if (row.length < 2 || !(row[0] instanceof Number rating)
+                    || !(row[1] instanceof Number count)) {
+                continue;
+            }
+            distribution.put(rating.intValue(), count.longValue());
         }
 
         return RatingSummaryResponse.builder()
@@ -264,7 +268,4 @@ public class ReviewServiceImpl implements ReviewService {
         }
     }
 
-    private Number number(Object value) {
-        return value instanceof Number result ? result : 0;
-    }
 }
