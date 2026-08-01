@@ -60,15 +60,6 @@ public class TeacherRevenueServiceImpl implements TeacherRevenueService {
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
-    public List<RevenueDetailResponse> getRevenueAnalytics(RevenueAnalyticsRequest request) {
-        validateRequest(request);
-        Long teacherId = getCurrentTeacher().getId();
-        return buildAnalytics(teacherId, request);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public RevenueReportResponse getRevenueReport(RevenueAnalyticsRequest request) {
         validateRequest(request);
         Long teacherId = getCurrentTeacher().getId();
@@ -86,7 +77,7 @@ public class TeacherRevenueServiceImpl implements TeacherRevenueService {
     }
 
     /**
-     * Logic dùng chung cho analytics & report.
+     * Logic tạo danh sách chi tiết cho báo cáo.
      * Nhận sẵn teacherId, không tự lấy user/check quyền -> tránh double auth check.
      */
     private List<RevenueDetailResponse> buildAnalytics(Long teacherId, RevenueAnalyticsRequest request) {

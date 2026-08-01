@@ -2,7 +2,6 @@ package com.dxh.learninghub.controller;
 
 import com.dxh.learninghub.dto.request.RevenueAnalyticsRequest;
 import com.dxh.learninghub.dto.response.ApiResponse;
-import com.dxh.learninghub.dto.response.RevenueDetailResponse;
 import com.dxh.learninghub.dto.response.RevenueReportResponse;
 import com.dxh.learninghub.dto.response.TeacherDashboardResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
@@ -20,13 +19,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/teacher/revenue")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-@Tag(name = "Teacher Revenue", description = "APIs for teacher revenue, analytics, reports, and students")
+@Tag(name = "Teacher Revenue", description = "APIs for teacher revenue reports and students")
 public class TeacherRevenueController {
 
     TeacherRevenueService teacherRevenueService;
@@ -41,19 +38,6 @@ public class TeacherRevenueController {
         return ApiResponse.<TeacherDashboardResponse>builder()
                 .code(HttpStatus.OK.value())
                 .result(teacherRevenueService.getRevenueOverview())
-                .build();
-    }
-
-    @Operation(
-            summary = "Get revenue analytics",
-            description = "Return monthly revenue for a year or weekly revenue for a selected month"
-    )
-    @PostMapping("/analytics")
-    public ApiResponse<List<RevenueDetailResponse>> getRevenueAnalytics(
-            @Valid @RequestBody RevenueAnalyticsRequest request) {
-        return ApiResponse.<List<RevenueDetailResponse>>builder()
-                .code(HttpStatus.OK.value())
-                .result(teacherRevenueService.getRevenueAnalytics(request))
                 .build();
     }
 
