@@ -44,6 +44,7 @@ public enum ErrorCode {
     INVALID_URL(1016, "Invalid URL", HttpStatus.BAD_REQUEST),
     INVALID_ROLE_ENUM(1017, "Invalid enum value. Allowed values are from {ADMIN,TEACHER,USER}", HttpStatus.BAD_REQUEST),
     INVALID_ENUM_VALUE(1018, "Invalid enum value. Allowed values are from {enumClass}", HttpStatus.BAD_REQUEST),
+    INVALID_POSITIVE(1019, "Value must be greater than 0", HttpStatus.BAD_REQUEST),
 
     UNAUTHENTICATED(1100, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1101, "You do not have permission", HttpStatus.FORBIDDEN),
