@@ -220,7 +220,11 @@ public class UserServiceImpl implements UserService {
         String oldAvatar = null;
         if (file != null && !file.isEmpty()) {
             oldAvatar = user.getAvatar();
-            awsS3Service.uploadFile(file, "avatars/" + user.getId(), UploadPolicy.AVATAR);
+            // Gán kết quả trả về từ S3 vào biến filePath (hoặc objectKey)
+            String newAvatarKey = awsS3Service.uploadFile(file, "avatars/" + user.getId(), UploadPolicy.AVATAR);
+
+            // Cập nhật đường dẫn mới vào entity user
+            user.setAvatar(newAvatarKey);
         }
 
         UserUpdateResponse response = userMapper.toUserUpdateResponse(userRepository.save(user));
