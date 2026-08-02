@@ -192,11 +192,24 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private void validateLessonAccess(Course course) {
+        User currentUser = currentUserProvider.getCurrentUser();
+
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(role -> RoleEnum.ADMIN.name().equals(role.getName()));
+
+        boolean isAuthor = course.getAuthor() != null
+                && Objects.equals(currentUser.getId(), course.getAuthor().getId());
+
+        // Nếu là Admin hoặc Tác giả của khóa học thì cho phép truy cập luôn
+        if (isAdmin || isAuthor) {
+            return;
+        }
+
+        // Các user thông thường vẫn phải kiểm tra trạng thái khóa học và việc ghi danh
         if (course.getStatus() != CourseStatus.APPROVED) {
             throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE);
         }
 
-        User currentUser = currentUserProvider.getCurrentUser();
         boolean isEnrolled = enrollmentRepository.existsByUserAndCourseAndStatusIn(
                 currentUser,
                 course,
