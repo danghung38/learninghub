@@ -48,10 +48,10 @@ public class AwsS3Service {
     @PostConstruct
     private void initS3Clients() {
         var credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
-        this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
-        this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
+        // Sửa Region.US_EAST_1 thành Region.AP_SOUTHEAST_1 cho cả s3Client và s3Presigner
+        this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.AP_SOUTHEAST_1).build();
+        this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(Region.AP_SOUTHEAST_1).build();
     }
-
     // --- Core Direct Upload
     public String uploadFile(MultipartFile file, String folder, UploadPolicy policy) {
         String fileName = FileUploadUtil.validate(file, policy);
