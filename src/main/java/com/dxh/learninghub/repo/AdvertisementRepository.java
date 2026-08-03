@@ -3,6 +3,7 @@ package com.dxh.learninghub.repo;
 import com.dxh.learninghub.entity.Advertisement;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -48,4 +49,13 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
     // Thêm method tìm danh sách quảng cáo đã hết hạn để lấy đường dẫn ảnh xóa trên S3
     @Query("select a from Advertisement a where a.endDate < :currentDate")
     List<Advertisement> findExpiredAdvertisements(@Param("currentDate") LocalDate currentDate);
+
+    @Modifying
+    @Query("""
+            update Advertisement a
+            set a.active = false
+            where a.active = true
+              and a.endDate < :currentDate
+            """)
+    int deactivateExpiredAdvertisements(@Param("currentDate") LocalDate currentDate);
 }

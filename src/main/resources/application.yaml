@@ -72,6 +72,11 @@ jobs:
     zone: Asia/Ho_Chi_Minh
     retention-days: 60
 
+  advertisement-deactivation:
+    enabled: ${ADVERTISEMENT_DEACTIVATION_ENABLED}
+    cron: "0 0 0 * * *"
+    zone: Asia/Ho_Chi_Minh
+
   s3-orphan-cleanup:
     enabled: ${S3_ORPHAN_CLEANUP_ENABLED}
     cron: "0 0 3 * * SUN"
