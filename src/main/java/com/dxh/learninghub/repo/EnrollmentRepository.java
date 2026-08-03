@@ -19,7 +19,14 @@ import java.util.Optional;
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @EntityGraph(attributePaths = {"course", "course.author"})
-    List<Enrollment> findCourseByUser(User user);
+    @Query("""
+            select e
+            from Enrollment e
+            where e.user = :user
+              and e.course.status = com.dxh.learninghub.enums.CourseStatus.APPROVED
+            order by e.createdAt desc
+            """)
+    List<Enrollment> findCourseByUser(@Param("user") User user);
 
     boolean existsByUserAndCourse(User user, Course course);
 
