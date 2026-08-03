@@ -51,6 +51,12 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     })
     Optional<Course> findWithChaptersAndLessonsById(Long id);
 
+    @EntityGraph(attributePaths = {
+            "chapters",
+            "chapters.lessons"
+    })
+    List<Course> findAllByStatus(CourseStatus status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Course c join fetch c.author where c.id = :id")
     Optional<Course> findByIdForUpdate(@Param("id") Long id);

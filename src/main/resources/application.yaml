@@ -84,6 +84,11 @@ jobs:
     grace-hours: 24
     dry-run: ${S3_ORPHAN_DRY_RUN}
 
+  deleted-course-s3-cleanup:
+    enabled: ${DELETED_COURSE_S3_CLEANUP_ENABLED:false}
+    cron: "0 0 0 * * SUN"
+    zone: Asia/Ho_Chi_Minh
+
 withdrawal:
   amount-per-point: ${WITHDRAWAL_AMOUNT_PER_POINT}
 
