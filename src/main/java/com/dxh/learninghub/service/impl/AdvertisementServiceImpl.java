@@ -227,6 +227,28 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         awsS3Service.deleteFileFromS3(advertisement.getImage());
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public void deleteExpiredAdvertisements() {
+        LocalDate today = LocalDate.now();
+        List<Advertisement> expiredAds = advertisementRepository.findExpiredAdvertisements(today);
+
+        if (expiredAds.isEmpty()) {
+            return;
+        }
+
+        // Xóa hình ảnh trên S3 trước khi xóa record trong DB
+        for (Advertisement ad : expiredAds) {
+            if (ad.getImage() != null && !ad.getImage().isBlank()) {
+                awsS3Service.deleteFileFromS3(ad.getImage());
+            }
+        }
+
+        // Xóa tất cả quảng cáo hết hạn trong DB
+        advertisementRepository.deleteAll(expiredAds);
+    }
+
     private Course findCourse(Long courseId) {
         return courseRepository.findPublicCourseById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_AVAILABLE));

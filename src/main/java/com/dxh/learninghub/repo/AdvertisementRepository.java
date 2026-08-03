@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,4 +44,8 @@ public interface AdvertisementRepository extends JpaRepository<Advertisement, Lo
             order by advertisement.createdAt desc
             """)
     List<Advertisement> findActiveAdvertisements();
+
+    // Thêm method tìm danh sách quảng cáo đã hết hạn để lấy đường dẫn ảnh xóa trên S3
+    @Query("select a from Advertisement a where a.endDate < :currentDate")
+    List<Advertisement> findExpiredAdvertisements(@Param("currentDate") LocalDate currentDate);
 }

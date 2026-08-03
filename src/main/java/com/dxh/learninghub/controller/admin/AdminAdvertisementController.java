@@ -118,4 +118,13 @@ public class AdminAdvertisementController {
                 .message("Delete advertisement successfully")
                 .build();
     }
+
+    @Operation(summary = "Delete expired advertisements", description = "Delete all advertisements whose end date has passed and remove their images from storage")
+    @DeleteMapping("/expired")
+    ApiResponse<Void> deleteExpired() {
+        advertisementService.deleteExpiredAdvertisements();
+        return ApiResponse.<Void>builder()
+                .message("Delete all expired advertisements successfully")
+                .build();
+    }
 }

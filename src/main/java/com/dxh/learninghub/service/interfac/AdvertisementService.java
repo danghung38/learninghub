@@ -28,4 +28,6 @@ public interface AdvertisementService {
     AdvertisementResponse resetSent(Long id);
 
     void delete(Long id);
+
+    void deleteExpiredAdvertisements();
 }
