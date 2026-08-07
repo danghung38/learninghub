@@ -10,8 +10,6 @@ import org.springframework.data.domain.Pageable;
 public interface UserPointService {
     UserPointBalanceResponse getMyPointBalance();
 
-    PointTransactionResponse getMyTransaction(Long transactionId);
-
     PageResponse<PointTransactionResponse> getMyTransactions(
             PointTransactionType type,
             Pageable pageable);

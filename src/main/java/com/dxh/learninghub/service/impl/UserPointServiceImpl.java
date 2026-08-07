@@ -6,8 +6,6 @@ import com.dxh.learninghub.dto.response.UserPointBalanceResponse;
 import com.dxh.learninghub.entity.PointTransaction;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.PointTransactionType;
-import com.dxh.learninghub.exception.AppException;
-import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.mapper.PointTransactionMapper;
 import com.dxh.learninghub.repo.PointTransactionRepository;
 import com.dxh.learninghub.service.interfac.UserPointService;
@@ -36,17 +34,6 @@ public class UserPointServiceImpl implements UserPointService {
         return UserPointBalanceResponse.builder()
                 .points(user.getPoints())
                 .build();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PointTransactionResponse getMyTransaction(Long transactionId) {
-        User user = currentUserProvider.getCurrentUser();
-        PointTransaction transaction = pointTransactionRepository
-                .findByIdAndUserId(transactionId, user.getId())
-                .orElseThrow(() -> new AppException(
-                        ErrorCode.POINT_TRANSACTION_NOT_EXISTED));
-        return pointTransactionMapper.toResponse(transaction);
     }
 
     @Override

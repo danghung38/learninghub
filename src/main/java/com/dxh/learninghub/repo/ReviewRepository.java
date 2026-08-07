@@ -30,18 +30,25 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByParentReviewIdInOrderByCreatedAtAsc(
             Collection<Long> parentReviewIds);
 
+    long countByCourseIdAndParentReviewIsNull(Long courseId);
+
     @Query("""
-            select count(r.id), coalesce(avg(r.rating), 0),
-                   coalesce(sum(case when r.rating = 1 then 1 else 0 end), 0),
-                   coalesce(sum(case when r.rating = 2 then 1 else 0 end), 0),
-                   coalesce(sum(case when r.rating = 3 then 1 else 0 end), 0),
-                   coalesce(sum(case when r.rating = 4 then 1 else 0 end), 0),
-                   coalesce(sum(case when r.rating = 5 then 1 else 0 end), 0)
+            select avg(r.rating)
             from Review r
             where r.course.id = :courseId
               and r.parentReview is null
             """)
-    Object[] getRatingSummary(@Param("courseId") Long courseId);
+    Double getAverageRating(@Param("courseId") Long courseId);
+
+    @Query("""
+            select r.rating, count(r.id)
+            from Review r
+            where r.course.id = :courseId
+              and r.parentReview is null
+              and r.rating is not null
+            group by r.rating
+            """)
+    List<Object[]> getRatingDistribution(@Param("courseId") Long courseId);
 
     @Query("""
             select count(r.id)

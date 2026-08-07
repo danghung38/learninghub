@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.impl;
 
+import com.dxh.learninghub.constant.AppConstant;
 import com.dxh.learninghub.dto.request.RevenueAnalyticsRequest;
 import com.dxh.learninghub.dto.response.RevenueDetailResponse;
 import com.dxh.learninghub.dto.response.RevenueReportResponse;
@@ -30,11 +31,6 @@ import java.util.*;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TeacherRevenueServiceImpl implements TeacherRevenueService {
 
-    static final String[] MONTH_NAMES = {
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    };
-
     CurrentUserProvider currentUserProvider;
     CourseRepository courseRepository;
     EnrollmentRepository enrollmentRepository;
@@ -60,15 +56,6 @@ public class TeacherRevenueServiceImpl implements TeacherRevenueService {
     @Override
     @Transactional(readOnly = true)
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
-    public List<RevenueDetailResponse> getRevenueAnalytics(RevenueAnalyticsRequest request) {
-        validateRequest(request);
-        Long teacherId = getCurrentTeacher().getId();
-        return buildAnalytics(teacherId, request);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public RevenueReportResponse getRevenueReport(RevenueAnalyticsRequest request) {
         validateRequest(request);
         Long teacherId = getCurrentTeacher().getId();
@@ -86,8 +73,8 @@ public class TeacherRevenueServiceImpl implements TeacherRevenueService {
     }
 
     /**
-     * Logic dùng chung cho analytics & report.
-     * Nhận sẵn teacherId, không tự lấy user/check quyền -> tránh double auth check.
+     * Shared logic for building report details.
+     * The teacher ID is already resolved, so authorization is not checked twice.
      */
     private List<RevenueDetailResponse> buildAnalytics(Long teacherId, RevenueAnalyticsRequest request) {
         return request.month() == null
@@ -106,7 +93,7 @@ public class TeacherRevenueServiceImpl implements TeacherRevenueService {
         List<RevenueDetailResponse> result = new ArrayList<>();
         for (int m = 1; m <= 12; m++) {
             result.add(revenueMapper.toMonthlyDetail(
-                    MONTH_NAMES[m - 1], year, revenueByMonth.getOrDefault(m, 0L)));
+                    AppConstant.MONTH_NAMES[m - 1], year, revenueByMonth.getOrDefault(m, 0L)));
         }
         return result;
     }
@@ -127,7 +114,7 @@ public class TeacherRevenueServiceImpl implements TeacherRevenueService {
         List<RevenueDetailResponse> result = new ArrayList<>();
         for (int w = 0; w < totalWeeks; w++) {
             result.add(revenueMapper.toWeeklyDetail(
-                    "Week " + (w + 1), MONTH_NAMES[month - 1], year, revenueByWeek[w]));
+                    "Week " + (w + 1), AppConstant.MONTH_NAMES[month - 1], year, revenueByWeek[w]));
         }
         return result;
     }

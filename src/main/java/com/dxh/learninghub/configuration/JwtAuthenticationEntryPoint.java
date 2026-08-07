@@ -28,7 +28,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 .message(errorCode.getMessage())
                 .build();
 
-        //dùng để chuyển ApiResponse thành chuỗi json
+        //dùng để chuyển ApiResponse thành json
         ObjectMapper objectMapper = new ObjectMapper();
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
 

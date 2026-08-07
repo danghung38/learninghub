@@ -7,66 +7,174 @@
         @page { size: A4 landscape; margin: 0; }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
-        body { font-family: CertificateFont, Arial, sans-serif; color: #0c1524; }
+        body {
+            font-family: CertificateFont, Arial, sans-serif;
+            color: #1a202c;
+            background: #fdfbf7;
+        }
         .certificate {
             width: 297mm;
             height: 210mm;
-            padding: 12mm;
-            background: #f8f6f1;
+            padding: 10mm;
+            background: #fdfbf7;
         }
         .frame {
-            height: 184mm;
-            border: 1px solid #c69a4b;
-            padding: 8mm 16mm;
+            height: 190mm;
+            border: 2px solid #b79042;
+            padding: 6mm;
+        }
+        .inner-frame {
+            height: 178mm;
+            border: 1px solid #d4af37;
+            padding: 10mm 20mm;
+            text-align: center;
+            background: #ffffff;
+        }
+        .header-table {
+            width: 100%;
+            margin-bottom: 5mm;
+        }
+        .brand {
+            text-align: left;
+            color: #b79042;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+        .seal-header {
+            text-align: right;
+            color: #b79042;
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+        .eyebrow {
+            margin: 4mm 0 1mm;
+            color: #718096;
+            font-size: 11px;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+        }
+        h1 {
+            margin: 0 0 4mm;
+            font-size: 32px;
+            color: #1a202c;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+        .label {
+            color: #4a5568;
+            font-size: 13px;
+            font-style: italic;
+        }
+        .recipient {
+            margin: 2mm 0;
+            font-size: 38px;
+            font-weight: bold;
+            color: #b79042;
+            letter-spacing: 1px;
+        }
+        .gold-line {
+            width: 40mm;
+            margin: 0 auto 3mm;
+            border-top: 1.5px solid #b79042;
+        }
+        .description {
+            color: #4a5568;
+            font-size: 13px;
+            margin-bottom: 2mm;
+        }
+        .course {
+            margin: 2mm 0 6mm;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .badge {
+            width: 16mm;
+            height: 16mm;
+            line-height: 16mm;
+            margin: 0 auto 5mm;
+            border: 1.5px solid #b79042;
+            border-radius: 50%;
+            background: #1a202c;
+            color: #d4af37;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .footer {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2mm;
+        }
+        .footer td {
+            width: 50%;
+            padding: 0 20mm;
             text-align: center;
         }
-        .brand { text-align: left; color: #c69a4b; font-size: 13px; letter-spacing: 2px; }
-        .eyebrow { margin: 8mm 0 2mm; color: #c69a4b; font-size: 11px; letter-spacing: 5px; }
-        h1 { margin: 0 0 7mm; font-size: 30px; letter-spacing: 2px; text-transform: uppercase; }
-        .label, .description { color: #6b7385; font-size: 13px; }
-        .recipient { margin: 3mm 0; font-size: 36px; font-weight: bold; font-style: italic; }
-        .gold-line { width: 28mm; margin: 0 auto 4mm; border-top: 2px solid #c69a4b; }
-        .course { margin: 4mm 0 8mm; font-size: 21px; font-weight: bold; }
-        .seal {
-            width: 18mm; height: 18mm; line-height: 18mm; margin: 0 auto 7mm;
-            border: 2px solid #c69a4b; border-radius: 50%; background: #0c1524;
-            color: #f4ead8; font-size: 20px; font-weight: bold;
+        .footer-value {
+            border-top: 1px solid #cbd5e0;
+            padding-top: 2mm;
+            font-size: 14px;
+            font-weight: bold;
+            color: #2d3748;
         }
-        .footer { width: 100%; border-collapse: collapse; }
-        .footer td { width: 50%; padding: 0 15mm; text-align: center; }
-        .footer-value { border-top: 1px solid #dcd5c4; padding-top: 3mm; font-size: 15px; }
-        .footer-label { margin-top: 2mm; color: #6b7385; font-size: 9px; letter-spacing: 2px; }
-        .verification { margin-top: 7mm; color: #6b7385; font-size: 9px; }
-        .verification strong { color: #0c1524; }
+        .footer-label {
+            margin-top: 1mm;
+            color: #718096;
+            font-size: 9px;
+            letter-spacing: 2px;
+        }
+        .verification {
+            margin-top: 6mm;
+            color: #718096;
+            font-size: 9px;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 3mm;
+        }
+        .verification strong { color: #2d3748; }
     </style>
 </head>
 <body>
 <div class="certificate">
     <div class="frame">
-        <div class="brand">LEARNING HUB</div>
-        <div class="eyebrow">AWARDED TO</div>
-        <h1>Certificate of Completion</h1>
-        <div class="label">This certifies that</div>
-        <div class="recipient" th:text="${recipient}">Recipient Name</div>
-        <div class="gold-line"></div>
-        <div class="description">has successfully completed the course</div>
-        <div class="course" th:text="${courseName}">Course Name</div>
-        <div class="seal">LH</div>
-        <table class="footer">
-            <tr>
-                <td>
-                    <div class="footer-value" th:text="${author}">Instructor Name</div>
-                    <div class="footer-label">INSTRUCTOR</div>
-                </td>
-                <td>
-                    <div class="footer-value" th:text="${issueDate}">Completion Date</div>
-                    <div class="footer-label">DATE</div>
-                </td>
-            </tr>
-        </table>
-        <div class="verification">
-            Verification code: <strong th:text="${verificationCode}">LH-CODE</strong>
-            &nbsp;|&nbsp; Verify at: <span th:text="${verificationPath}">/certificates/verify/code</span>
+        <div class="inner-frame">
+            <table class="header-table">
+                <tr>
+                    <td style="padding:0; text-align: left;"><div class="brand">LEARNING HUB</div></td>
+                    <td style="padding:0; text-align: right;"><div class="seal-header">VERIFIED CERTIFICATE</div></td>
+                </tr>
+            </table>
+
+            <div class="eyebrow">Certificate of Completion</div>
+            <h1>This is proudly presented to</h1>
+
+            <div class="recipient" th:text="${recipient}">Recipient Name</div>
+            <div class="gold-line"></div>
+
+            <div class="description">for successfully completing the professional course</div>
+            <div class="course" th:text="${courseName}">Course Name</div>
+
+            <div class="badge">LH</div>
+
+            <table class="footer">
+                <tr>
+                    <td>
+                        <div class="footer-value" th:text="${author}">Instructor Name</div>
+                        <div class="footer-label">INSTRUCTOR</div>
+                    </td>
+                    <td>
+                        <div class="footer-value" th:text="${issueDate}">Completion Date</div>
+                        <div class="footer-label">DATE OF ISSUANCE</div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="verification">
+                Verification Code: <strong th:text="${verificationCode}">LH-CODE</strong>
+                &#160;&#160;|&#160; Verify online at: <span th:text="${verificationPath}">/certificates/verify/code</span>
+            </div>
         </div>
     </div>
 </div>

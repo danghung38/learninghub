@@ -14,6 +14,7 @@ import com.dxh.learninghub.repo.PointTransactionRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.interfac.admin.AdminPointTransactionService;
 import com.dxh.learninghub.service.interfac.NotificationService;
+import com.dxh.learninghub.utils.CurrentUserProvider;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -34,6 +35,7 @@ public class AdminPointTransactionServiceImpl implements AdminPointTransactionSe
     PointTransactionMapper pointTransactionMapper;
     UserRepository userRepository;
     NotificationService notificationService;
+    CurrentUserProvider currentUser;
 
     @Override
     @Transactional
@@ -130,7 +132,7 @@ public class AdminPointTransactionServiceImpl implements AdminPointTransactionSe
 
         notificationService.createNotification(
                 user,
-                null,
+                currentUser.getCurrentUser(),
                 notificationTitle,
                 message,
                 "/dashboard/wallet");

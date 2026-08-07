@@ -32,9 +32,11 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     Optional<User> findFirstByRoles_Name(String roleName);
 
+    List<User> findAllByEnabledTrueAndBannedFalse();
+
     @Query("select user from User user where user.registrationStatus = com.dxh.learninghub.enums.RegistrationStatus.PENDING")
     Page<User> findPendingTeacherApplications(Pageable pageable);
 
     @EntityGraph(attributePaths = "roles")
-    List<User> findAllByIdIn(Collection<Long> userIds);
+    Optional<User> findById(Long id);
 }

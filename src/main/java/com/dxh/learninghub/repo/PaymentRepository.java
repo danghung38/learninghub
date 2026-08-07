@@ -14,7 +14,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -47,6 +49,54 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate,
             Pageable pageable);
+
+    @Query("""
+            select count(p.id)
+            from Payment p
+            where p.status = :status
+            """)
+    Long countByStatusForAdmin(@Param("status") PaymentStatus status);
+
+    @Query("""
+            select coalesce(sum(p.amount), 0)
+            from Payment p
+            where p.status = :status
+            """)
+    BigDecimal sumAmountByStatusForAdmin(@Param("status") PaymentStatus status);
+
+    @Query("""
+            select coalesce(sum(p.pointsReceived), 0)
+            from Payment p
+            where p.status = :status
+            """)
+    Long sumPointsByStatusForAdmin(@Param("status") PaymentStatus status);
+
+    @Query("""
+            select month(p.paidAt), coalesce(sum(p.amount), 0),
+                   coalesce(sum(p.pointsReceived), 0), count(p.id)
+            from Payment p
+            where p.status = com.dxh.learninghub.enums.PaymentStatus.COMPLETED
+              and p.paidAt is not null
+              and year(p.paidAt) = :year
+            group by month(p.paidAt)
+            order by month(p.paidAt)
+            """)
+    List<Object[]> sumCompletedPaymentsGroupByMonthForAdmin(@Param("year") Integer year);
+
+    @Query("""
+            select day(p.paidAt), coalesce(sum(p.amount), 0),
+                   coalesce(sum(p.pointsReceived), 0), count(p.id)
+            from Payment p
+            where p.status = com.dxh.learninghub.enums.PaymentStatus.COMPLETED
+              and p.paidAt is not null
+              and year(p.paidAt) = :year
+              and month(p.paidAt) = :month
+            group by day(p.paidAt)
+            order by day(p.paidAt)
+            """)
+    List<Object[]> sumCompletedPaymentsGroupByDayOfMonthForAdmin(
+            @Param("year") Integer year,
+            @Param("month") Integer month);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

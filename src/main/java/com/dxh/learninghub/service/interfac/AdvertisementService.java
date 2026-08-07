@@ -15,5 +15,19 @@ public interface AdvertisementService {
 
     AdvertisementResponse deactivate(Long id);
 
+    AdvertisementResponse activate(Long id);
+
+    List<AdvertisementResponse> getAllAdvertisements(Boolean active, Boolean sent, String title);
+
     List<AdvertisementResponse> getActiveAdvertisements();
+
+    AdvertisementResponse sendNotification(Long id);
+
+    void sendTestNotification(Long advertisementId, String email);
+
+    AdvertisementResponse resetSent(Long id);
+
+    void delete(Long id);
+
+    void deleteExpiredAdvertisements();
 }

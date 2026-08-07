@@ -54,14 +54,14 @@ public class S3ObjectReferenceRepository {
                 SELECT thumbnail
                 FROM courses
                 WHERE thumbnail IS NOT NULL
-                  AND status <> 'DELEDED'
+                  AND status <> 'DELETED'
 
                 UNION ALL
 
                 SELECT video_url
                 FROM courses
                 WHERE video_url IS NOT NULL
-                  AND status <> 'DELEDED'
+                  AND status <> 'DELETED'
 
                 UNION ALL
 
@@ -70,13 +70,7 @@ public class S3ObjectReferenceRepository {
                 JOIN chapters ch ON ch.id = l.chapter_id
                 JOIN courses c ON c.id = ch.course_id
                 WHERE l.content_url IS NOT NULL
-                  AND c.status <> 'DELEDED'
-
-                UNION ALL
-
-                SELECT object_key
-                FROM certificates
-                WHERE object_key IS NOT NULL
+                  AND c.status <> 'DELETED'
 
                 UNION ALL
 

@@ -70,7 +70,6 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
                                 .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                                 .requestMatchers(API_DOC_ENDPOINTS).permitAll()
-//                                websocket
                                 .requestMatchers("/ws/**", "/topic/**", "/queue/**", "/user/**").permitAll()
                                 .requestMatchers("/admin-notify.html", "/admin-notify-fail.html").permitAll()
                                 .anyRequest().authenticated())

@@ -15,7 +15,6 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,17 +52,6 @@ public class PointTransactionController {
                 .code(HttpStatus.OK.value())
                 .message("Get point transactions successfully")
                 .result(userPointService.getMyTransactions(type, pageable))
-                .build();
-    }
-
-    @Operation(summary = "Get a point transaction", description = "Return one point transaction belonging to the current user")
-    @GetMapping("/transactions/{transactionId}")
-    public ApiResponse<PointTransactionResponse> getMyPointTransaction(
-            @PathVariable Long transactionId) {
-        return ApiResponse.<PointTransactionResponse>builder()
-                .code(HttpStatus.OK.value())
-                .message("Get point transaction successfully")
-                .result(userPointService.getMyTransaction(transactionId))
                 .build();
     }
 

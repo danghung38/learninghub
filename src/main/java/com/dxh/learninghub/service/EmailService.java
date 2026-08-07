@@ -33,7 +33,7 @@ public class EmailService {
         Map<String, Object> body = Map.of(
                 "sender",      Map.of("email", fromEmail, "name", fromName),
                 "to",          List.of(Map.of("email", to)),
-                "subject",     "Xác thực tài khoản - Learning Hub",
+                "subject",     "Verify your account - Learning Hub",
                 "htmlContent", buildOtpHtml(name, otp)
         );
         send(body, "OTP");
@@ -43,10 +43,25 @@ public class EmailService {
         Map<String, Object> body = Map.of(
                 "sender",      Map.of("email", fromEmail, "name", fromName),
                 "to",          List.of(Map.of("email", to)),
-                "subject",     "Khôi phục mật khẩu - Learning Hub",
+                "subject",     "Reset your password - Learning Hub",
                 "htmlContent", buildResetPasswordHtml(name, resetCode)
         );
         send(body, "ResetPassword");
+    }
+
+    public void sendAdvertisementEmail(
+            String to,
+            String name,
+            String title,
+            String description,
+            String link) {
+        Map<String, Object> body = Map.of(
+                "sender",      Map.of("email", fromEmail, "name", fromName),
+                "to",          List.of(Map.of("email", to)),
+                "subject",     title + " - Learning Hub",
+                "htmlContent", buildAdvertisementHtml(name, title, description, link)
+        );
+        send(body, "Advertisement");
     }
 
     private void send(Map<String, Object> body, String type) {
@@ -70,7 +85,7 @@ public class EmailService {
     private String buildOtpHtml(String name, String otp) {
         return """
             <!DOCTYPE html>
-            <html lang="vi">
+            <html lang="en">
             <head><meta charset="UTF-8"/></head>
             <body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
               <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
@@ -85,22 +100,22 @@ public class EmailService {
                     </tr>
                     <tr>
                       <td style="padding:40px;">
-                        <h2 style="color:#1a202c;margin:0 0 8px;">Xin chào, {{name}}! 👋</h2>
+                        <h2 style="color:#1a202c;margin:0 0 8px;">Hello, {{name}}! 👋</h2>
                         <p style="color:#718096;font-size:15px;line-height:1.6;margin:0 0 28px;">
-                          Vui lòng nhập mã OTP bên dưới để xác thực tài khoản của bạn.
+                          Enter the OTP below to verify your Learning Hub account.
                         </p>
                         <div style="background:#f7f5ff;border:2px dashed #764ba2;border-radius:12px;
                                     padding:28px;text-align:center;margin-bottom:24px;">
                           <p style="margin:0 0 8px;color:#9a8abf;font-size:12px;
-                                    text-transform:uppercase;letter-spacing:2px;">Mã xác thực</p>
+                                    text-transform:uppercase;letter-spacing:2px;">Verification code</p>
                           <div style="font-size:42px;font-weight:800;letter-spacing:12px;
                                       color:#667eea;font-family:'Courier New',monospace;">{{otp}}</div>
                         </div>
                         <div style="background:#fff8e1;border-left:4px solid #f6ad55;
                                     border-radius:6px;padding:14px 18px;">
                           <p style="margin:0;color:#92400e;font-size:14px;">
-                            ⏱ Mã có hiệu lực trong <strong>30 phút</strong>.
-                            Không chia sẻ mã này với bất kỳ ai.
+                            ⏱ This code expires in <strong>30 minutes</strong>.
+                            Never share it with anyone.
                           </p>
                         </div>
                       </td>
@@ -123,7 +138,7 @@ public class EmailService {
     private String buildResetPasswordHtml(String name, String resetCode) {
         return """
             <!DOCTYPE html>
-            <html lang="vi">
+            <html lang="en">
             <head><meta charset="UTF-8"/></head>
             <body style="margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;">
               <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
@@ -138,27 +153,27 @@ public class EmailService {
                     </tr>
                     <tr>
                       <td style="padding:40px;">
-                        <h2 style="color:#1a202c;margin:0 0 8px;">Khôi phục mật khẩu</h2>
+                        <h2 style="color:#1a202c;margin:0 0 8px;">Reset your password</h2>
                         <p style="color:#718096;font-size:15px;line-height:1.6;margin:0 0 28px;">
-                          Xin chào <strong>{{name}}</strong>, đây là mã xác nhận đặt lại mật khẩu của bạn.
+                          Hello <strong>{{name}}</strong>, use this code to reset your password.
                         </p>
                         <div style="background:#fff5f5;border:2px dashed #f5576c;border-radius:12px;
                                     padding:28px;text-align:center;margin-bottom:24px;">
                           <p style="margin:0 0 8px;color:#c53030;font-size:12px;
-                                    text-transform:uppercase;letter-spacing:2px;">Mã xác nhận</p>
+                                    text-transform:uppercase;letter-spacing:2px;">Reset code</p>
                           <div style="font-size:42px;font-weight:800;letter-spacing:12px;
                                       color:#f5576c;font-family:'Courier New',monospace;">{{resetCode}}</div>
                         </div>
                         <div style="background:#fff8e1;border-left:4px solid #f6ad55;
                                     border-radius:6px;padding:14px 18px;margin-bottom:12px;">
                           <p style="margin:0;color:#92400e;font-size:14px;">
-                            ⏱ Mã có hiệu lực trong <strong>30 phút</strong>.
+                            ⏱ This code expires in <strong>30 minutes</strong>.
                           </p>
                         </div>
                         <div style="background:#ebf8ff;border-left:4px solid #63b3ed;
                                     border-radius:6px;padding:14px 18px;">
                           <p style="margin:0;color:#2c5282;font-size:14px;">
-                            🛡 Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
+                            🛡 If you did not request a password reset, you can safely ignore this email.
                           </p>
                         </div>
                       </td>
@@ -176,5 +191,54 @@ public class EmailService {
             """
                 .replace("{{name}}", name)
                 .replace("{{resetCode}}", resetCode);
+    }
+
+    private String buildAdvertisementHtml(
+            String name,
+            String title,
+            String description,
+            String link) {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head><meta charset="UTF-8"/></head>
+            <body style="margin:0;padding:0;background:#f4f5fb;font-family:'Segoe UI',Arial,sans-serif;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+                <tr><td align="center">
+                  <table width="560" cellpadding="0" cellspacing="0"
+                    style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(53,45,145,.12);">
+                    <tr>
+                      <td style="background:linear-gradient(135deg,#5145cd,#8b5cf6);padding:34px;text-align:center;">
+                        <div style="font-size:36px;">&#128227;</div>
+                        <h1 style="color:#fff;margin:8px 0 0;font-size:24px;">Learning Hub</h1>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:36px;">
+                        <p style="color:#6b63ca;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin:0 0 10px;">New announcement</p>
+                        <h2 style="color:#172033;margin:0 0 12px;font-size:24px;">{{title}}</h2>
+                        <p style="color:#667085;font-size:15px;line-height:1.7;margin:0 0 26px;">Hello {{name}}, {{description}}</p>
+                        <a href="{{link}}" style="display:inline-block;background:#5749d6;color:#fff;text-decoration:none;border-radius:10px;padding:13px 21px;font-weight:700;">View announcement</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="background:#fafaff;padding:18px 36px;border-top:1px solid #ececf5;text-align:center;">
+                        <p style="margin:0;color:#98a2b3;font-size:12px;">You received this email from Learning Hub.</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td></tr>
+              </table>
+            </body>
+            </html>
+            """
+                .replace("{{name}}", safe(name))
+                .replace("{{title}}", safe(title))
+                .replace("{{description}}", safe(description))
+                .replace("{{link}}", safe(link));
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }

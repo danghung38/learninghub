@@ -12,15 +12,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Repository
 public interface PointTransactionRepository extends JpaRepository<PointTransaction, Long> {
 
     boolean existsByPaymentId(Long paymentId);
-
-    @EntityGraph(attributePaths = {"user", "course", "payment"})
-    Optional<PointTransaction> findByIdAndUserId(Long id, Long userId);
 
     @EntityGraph(attributePaths = {"user", "course", "payment"})
     @Query("""

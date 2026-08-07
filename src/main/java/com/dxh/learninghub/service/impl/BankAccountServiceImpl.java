@@ -37,13 +37,12 @@ public class BankAccountServiceImpl implements BankAccountService {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public BankAccountResponse create(CreateBankAccountRequest request) {
         User teacher = getLockedCurrentTeacher();
-        List<BankAccount> activeAccounts =
-                bankAccountRepository.findAllByTeacherIdAndActiveTrue(teacher.getId());
+        List<BankAccount> activeAccounts = bankAccountRepository.findAllByTeacherIdAndActiveTrue(teacher.getId());
 
-        boolean makeDefault = Boolean.TRUE.equals(request.isDefault())
-                || activeAccounts.isEmpty();
+        boolean makeDefault = Boolean.TRUE.equals(request.isDefault()) || activeAccounts.isEmpty();
         if (makeDefault) {
             activeAccounts.forEach(account -> account.setIsDefault(false));
+            bankAccountRepository.saveAll(activeAccounts); // Đảm bảo update xuống DB
         }
 
         BankAccount bankAccount = bankAccountMapper.toEntity(request);
@@ -58,18 +57,17 @@ public class BankAccountServiceImpl implements BankAccountService {
     @Override
     @Transactional
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
-    public BankAccountResponse update(
-            Long bankAccountId,
-            UpdateBankAccountRequest request) {
+    public BankAccountResponse update(Long bankAccountId, UpdateBankAccountRequest request) {
         User teacher = getLockedCurrentTeacher();
         BankAccount bankAccount = findOwnedAccount(bankAccountId, teacher.getId());
         validateActive(bankAccount);
 
         if (Boolean.TRUE.equals(request.isDefault())) {
-            bankAccountRepository.findAllByTeacherIdAndActiveTrue(teacher.getId())
-                    .stream()
+            List<BankAccount> activeAccounts = bankAccountRepository.findAllByTeacherIdAndActiveTrue(teacher.getId());
+            activeAccounts.stream()
                     .filter(account -> !account.getId().equals(bankAccountId))
                     .forEach(account -> account.setIsDefault(false));
+            bankAccountRepository.saveAll(activeAccounts);
         }
 
         bankAccountMapper.update(request, bankAccount);
@@ -90,11 +88,14 @@ public class BankAccountServiceImpl implements BankAccountService {
         bankAccount.setIsDefault(false);
 
         if (wasDefault) {
-            bankAccountRepository.findAllByTeacherIdAndActiveTrue(teacher.getId())
-                    .stream()
+            List<BankAccount> activeAccounts = bankAccountRepository.findAllByTeacherIdAndActiveTrue(teacher.getId());
+            activeAccounts.stream()
                     .filter(account -> !account.getId().equals(bankAccountId))
                     .min(Comparator.comparing(BankAccount::getCreatedAt))
-                    .ifPresent(account -> account.setIsDefault(true));
+                    .ifPresent(account -> {
+                        account.setIsDefault(true);
+                        bankAccountRepository.save(account);
+                    });
         }
     }
 

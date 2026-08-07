@@ -40,4 +40,14 @@ public class Advertisement extends AbstractEntity<Long> {
 
     @Column(nullable = false)
     boolean active;
+
+    /**
+     * Delivery state for the current advertisement.
+     *
+     * This flag is the migration point for Kafka: replace the direct fan-out
+     * with an advertisement event when the messaging pipeline is introduced.
+     */
+    @Builder.Default
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    boolean sent = false;
 }

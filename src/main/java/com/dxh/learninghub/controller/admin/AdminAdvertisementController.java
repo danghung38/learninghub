@@ -1,6 +1,7 @@
 package com.dxh.learninghub.controller.admin;
 
 import com.dxh.learninghub.dto.request.AdvertisementCreationRequest;
+import com.dxh.learninghub.dto.request.AdvertisementTestSendRequest;
 import com.dxh.learninghub.dto.request.AdvertisementUpdateRequest;
 import com.dxh.learninghub.dto.response.AdvertisementResponse;
 import com.dxh.learninghub.dto.response.ApiResponse;
@@ -16,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/admin/advertisements")
 @RequiredArgsConstructor
@@ -24,6 +27,18 @@ import org.springframework.web.multipart.MultipartFile;
 public class AdminAdvertisementController {
 
     AdvertisementService advertisementService;
+
+    @Operation(summary = "Get all advertisements", description = "Return all advertisements for the administration workspace")
+    @GetMapping
+    ApiResponse<List<AdvertisementResponse>> getAll(
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Boolean sent,
+            @RequestParam(required = false) String title) {
+        return ApiResponse.<List<AdvertisementResponse>>builder()
+                .message("Get advertisements successfully")
+                .result(advertisementService.getAllAdvertisements(active, sent, title))
+                .build();
+    }
 
     @Operation(summary = "Create an advertisement", description = "Create an advertisement with its display image")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -56,6 +71,60 @@ public class AdminAdvertisementController {
         return ApiResponse.<AdvertisementResponse>builder()
                 .message("Deactivate advertisement successfully")
                 .result(advertisementService.deactivate(id))
+                .build();
+    }
+
+    @Operation(summary = "Activate an advertisement", description = "Activate an advertisement so it can be displayed during its scheduled period")
+    @PatchMapping("/{id}/activate")
+    ApiResponse<AdvertisementResponse> activate(@PathVariable Long id) {
+        return ApiResponse.<AdvertisementResponse>builder()
+                .message("Activate advertisement successfully")
+                .result(advertisementService.activate(id))
+                .build();
+    }
+
+    @Operation(summary = "Send an advertisement", description = "Notify all active users and send the advertisement by email")
+    @PostMapping("/{id}/send")
+    ApiResponse<AdvertisementResponse> send(@PathVariable Long id) {
+        return ApiResponse.<AdvertisementResponse>builder()
+                .message("Advertisement notification sent successfully")
+                .result(advertisementService.sendNotification(id))
+                .build();
+    }
+
+    @Operation(summary = "Test an advertisement", description = "Send one advertisement notification and email to one registered user")
+    @PostMapping("/test-send")
+    ApiResponse<Void> testSend(@Valid @RequestBody AdvertisementTestSendRequest request) {
+        advertisementService.sendTestNotification(request.advertisementId(), request.email());
+        return ApiResponse.<Void>builder()
+                .message("Advertisement test delivery sent successfully")
+                .build();
+    }
+
+    @Operation(summary = "Reset advertisement delivery state", description = "Allow the advertisement to be sent again")
+    @PatchMapping("/{id}/reset-sent")
+    ApiResponse<AdvertisementResponse> resetSent(@PathVariable Long id) {
+        return ApiResponse.<AdvertisementResponse>builder()
+                .message("Advertisement delivery state reset successfully")
+                .result(advertisementService.resetSent(id))
+                .build();
+    }
+
+    @Operation(summary = "Delete an advertisement", description = "Delete an advertisement and its image from storage")
+    @DeleteMapping("/{id}")
+    ApiResponse<Void> delete(@PathVariable Long id) {
+        advertisementService.delete(id);
+        return ApiResponse.<Void>builder()
+                .message("Delete advertisement successfully")
+                .build();
+    }
+
+    @Operation(summary = "Delete expired advertisements", description = "Delete all advertisements whose end date has passed and remove their images from storage")
+    @DeleteMapping("/expired")
+    ApiResponse<Void> deleteExpired() {
+        advertisementService.deleteExpiredAdvertisements();
+        return ApiResponse.<Void>builder()
+                .message("Delete all expired advertisements successfully")
                 .build();
     }
 }

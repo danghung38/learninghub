@@ -2,6 +2,7 @@ package com.dxh.learninghub.entity;
 
 import com.dxh.learninghub.enums.Gender;
 import com.dxh.learninghub.enums.RegistrationStatus;
+import com.dxh.learninghub.enums.RoleEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -130,6 +131,11 @@ public class User extends AbstractEntity<Long> {
     @Enumerated(EnumType.STRING)
     @Column(name = "registration_status", nullable = false)
     RegistrationStatus registrationStatus = RegistrationStatus.NONE;
+
+    public boolean isAdmin() {
+        return this.roles != null && this.roles.stream()
+                .anyMatch(role -> RoleEnum.ADMIN.name().equals(role.getName()));
+    }
 
     @PrePersist
     protected void onCreate() {

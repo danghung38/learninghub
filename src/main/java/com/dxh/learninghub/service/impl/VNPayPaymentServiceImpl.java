@@ -125,7 +125,9 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         }
 
         payment.setResponseCode(params.get("vnp_ResponseCode"));
-        payment.setGatewayTransactionNo(blankToNull(params.get("vnp_TransactionNo")));
+        // Sửa đoạn gán gatewayTransactionNo trong processIpn():
+        String gatewayTxnNo = params.get("vnp_TransactionNo");
+        payment.setGatewayTransactionNo(normalizeTransactionNo(gatewayTxnNo));
         payment.setBankCode(blankToNull(params.get("vnp_BankCode")));
 
         boolean successful = "00".equals(params.get("vnp_ResponseCode"))
@@ -138,10 +140,10 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             notificationService.createNotification(
                     payment.getUser(),
                     null,
-                    "Nạp điểm không thành công",
+                    "Top-up Failed",
                     failureNotificationMessage(payment),
                     "/dashboard/wallet"
-                    //for fe
+                    // for fe
             );
             log.info("VNPAY deposit {} failed with response code {}",
                     payment.getMerchantTransactionRef(), payment.getResponseCode());
@@ -173,10 +175,10 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         notificationService.createNotification(
                 user,
                 null,
-                "Nạp điểm thành công",
-                "Giao dịch " + payment.getMerchantTransactionRef()
-                        + " đã cộng " + payment.getPointsReceived()
-                        + " điểm vào tài khoản của bạn",
+                "Top-up Successful",
+                "Transaction " + payment.getMerchantTransactionRef()
+                        + " has added " + payment.getPointsReceived()
+                        + " points to your account",
                 "/dashboard/wallet"
         );
 
@@ -282,12 +284,12 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
 
     private static String failureNotificationMessage(Payment payment) {
         String reason = switch (payment.getStatus()) {
-            case CANCELED -> "đã bị hủy";
-            case EXPIRED -> "đã hết hạn";
-            default -> "không thể hoàn tất";
+            case CANCELED -> "has been canceled";
+            case EXPIRED -> "has expired";
+            default -> "could not be completed";
         };
-        return "Giao dịch " + payment.getMerchantTransactionRef() + " " + reason
-                + ". Tài khoản của bạn chưa bị trừ tiền hoặc cộng điểm";
+        return "Transaction " + payment.getMerchantTransactionRef() + " " + reason
+                + ". Your account has not been charged or credited points";
     }
 
     private AdminPaymentResponse toAdminResponse(Payment payment) {
@@ -322,6 +324,13 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             log.warn("VNPAY callback contains invalid vnp_PayDate: {}", payDate);
             return null;
         }
+    }
+
+    private String normalizeTransactionNo(String txnNo) {
+        if (!StringUtils.hasText(txnNo) || "0".equals(txnNo.trim())) {
+            return null; // Trả về NULL để DB không bị tính trùng lặp Unique
+        }
+        return txnNo.trim();
     }
 
     private static String newTransactionRef() {

@@ -79,7 +79,7 @@ public class VNPayUtil {
     static String buildCanonicalQuery(Map<String, String> params) {
         return params.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
-                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .sorted(Map.Entry.comparingByKey())
                 .map(entry -> encode(entry.getKey()) + "=" + encode(entry.getValue()))
                 .collect(Collectors.joining("&"));
     }

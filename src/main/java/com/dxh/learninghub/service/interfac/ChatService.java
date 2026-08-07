@@ -19,5 +19,7 @@ public interface ChatService {
 
     ConversationResponse getOrCreateCourseQaConversation(Long courseId);
 
+    ConversationResponse getOrCreateCourseStudentConversation(Long courseId, Long studentId);
+
     void sendMessage(String username, ChatSendRequest request);
 }

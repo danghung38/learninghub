@@ -1,21 +1,27 @@
 package com.dxh.learninghub.service.impl;
 
+import com.dxh.learninghub.dto.response.CertificateResponse;
 import com.dxh.learninghub.dto.response.CertificateVerificationResponse;
+import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.entity.Certificate;
 import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.User;
+import com.dxh.learninghub.enums.CourseStatus; // 👈 Import CourseStatus
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
+import com.dxh.learninghub.mapper.CertificateMapper;
 import com.dxh.learninghub.repo.CertificateRepository;
 import com.dxh.learninghub.repo.CourseRepository;
-import com.dxh.learninghub.service.CertificatePdfGenerator;
 import com.dxh.learninghub.service.interfac.CertificateService;
 import com.dxh.learninghub.service.interfac.LearningProgressService;
+import com.dxh.learninghub.utils.CertificatePdfGenerator;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,13 +40,41 @@ public class CertificateServiceImpl implements CertificateService {
     LearningProgressService learningProgressService;
     CurrentUserProvider currentUserProvider;
     CertificatePdfGenerator pdfGenerator;
+    CertificateMapper certificateMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CertificateResponse> getMyCertificates(Pageable pageable) {
+        User user = currentUserProvider.getCurrentUser();
+
+        // 1. Chỉ lấy chứng chỉ của các khóa học đã APPROVED
+        Page<Certificate> page = certificateRepository.findAllByUserIdAndCourseStatus(
+                user.getId(), CourseStatus.APPROVED, pageable);
+
+        return PageResponse.<CertificateResponse>builder()
+                .pageNo(pageable.getPageNumber() + 1)
+                .pageSize(page.getSize())
+                .totalPage(page.getTotalPages())
+                .totalElements(page.getTotalElements())
+                .items(page.stream().map(certificateMapper::toResponse).toList())
+                .build();
+    }
 
     @Override
     @Transactional
     public byte[] downloadCertificatePdf(Long courseId) {
         User user = currentUserProvider.getCurrentUser();
+
+        // 2. Validate khóa học tồn tại & phải có trạng thái APPROVED
+        Course course = courseRepository.findWithAuthorById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
+
+        if (course.getStatus() != CourseStatus.APPROVED) {
+            throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE); // hoặc dùng ErrorCode phù hợp
+        }
+
         Certificate certificate = certificateRepository.findByUserIdAndCourseId(user.getId(), courseId)
-                .orElseGet(() -> createCertificate(user, courseId));
+                .orElseGet(() -> createCertificate(user, course));
 
         // Render PDF trực tiếp từ dữ liệu trong DB
         return pdfGenerator.generate(
@@ -52,7 +86,6 @@ public class CertificateServiceImpl implements CertificateService {
         );
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public CertificateVerificationResponse verify(String verificationCode) {
@@ -60,22 +93,17 @@ public class CertificateServiceImpl implements CertificateService {
                         verificationCode.trim().toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new AppException(ErrorCode.CERTIFICATE_NOT_EXISTED));
 
-        return new CertificateVerificationResponse(
-                certificate.getVerificationCode(),
-                certificate.getUser().getFullName(),
-                certificate.getCourse().getTitle(),
-                certificate.getCourse().getAuthor().getFullName(),
-                certificate.getIssueDate(),
-                true);
-    }
-
-    private Certificate createCertificate(User user, Long courseId) {
-        if (!Boolean.TRUE.equals(learningProgressService.getCourseProgress(courseId).completed())) {
-            throw new AppException(ErrorCode.COURSE_NOT_COMPLETED);
+        if (certificate.getCourse().getStatus() != CourseStatus.APPROVED) {
+            throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE);
         }
 
-        Course course = courseRepository.findWithAuthorById(courseId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
+        return certificateMapper.toVerificationResponse(certificate);
+    }
+
+    private Certificate createCertificate(User user, Course course) {
+        if (!Boolean.TRUE.equals(learningProgressService.getCourseProgress(course.getId()).completed())) {
+            throw new AppException(ErrorCode.COURSE_NOT_COMPLETED);
+        }
 
         String verificationCode = "LH-" + UUID.randomUUID().toString()
                 .replace("-", "").substring(0, 16).toUpperCase(Locale.ROOT);

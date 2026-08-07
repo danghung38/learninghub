@@ -8,9 +8,8 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring", uses = AwsS3Service.class)
 public interface NotificationMapper {
-    @Mapping(source = "user.id", target = "userId")
     @Mapping(
-            source = "avatarUrl",
+            source = "sender.avatar",
             target = "avatarUrl",
             qualifiedByName = "resolveFileUrl")
     NotificationResponse toResponse(Notification notification);

@@ -44,6 +44,7 @@ public enum ErrorCode {
     INVALID_URL(1016, "Invalid URL", HttpStatus.BAD_REQUEST),
     INVALID_ROLE_ENUM(1017, "Invalid enum value. Allowed values are from {ADMIN,TEACHER,USER}", HttpStatus.BAD_REQUEST),
     INVALID_ENUM_VALUE(1018, "Invalid enum value. Allowed values are from {enumClass}", HttpStatus.BAD_REQUEST),
+    INVALID_POSITIVE(1019, "Value must be greater than 0", HttpStatus.BAD_REQUEST),
 
     UNAUTHENTICATED(1100, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1101, "You do not have permission", HttpStatus.FORBIDDEN),
@@ -91,7 +92,7 @@ public enum ErrorCode {
     CANNOT_BUY_OWN_COURSE(1304, "You cannot purchase your own course", HttpStatus.BAD_REQUEST),
     NOT_COURSE_OWNER(1305, "You are not the owner of this course", HttpStatus.FORBIDDEN),
     COURSE_ALREADY_DELEDED(1306, "Course is already soft-deleted", HttpStatus.BAD_REQUEST),
-    COURSE_DELEDED_READ_ONLY(1307, "Soft-deleted courses cannot be modified", HttpStatus.CONFLICT),
+    COURSE_DELETED_READ_ONLY(1307, "Soft-deleted courses cannot be modified", HttpStatus.CONFLICT),
     COURSE_NOT_BANNED(1308, "Course is not banned", HttpStatus.BAD_REQUEST),
     COURSE_BANNED_CANNOT_DELETE(1309, "A banned course cannot be soft-deleted by its owner", HttpStatus.CONFLICT),
     COURSE_NOT_DRAFT(1310, "Only a draft course can be submitted for approval", HttpStatus.CONFLICT),
@@ -162,7 +163,8 @@ public enum ErrorCode {
     CERTIFICATE_GENERATION_FAILED(2602, "Failed to generate certificate", HttpStatus.INTERNAL_SERVER_ERROR),
 
     ADVERTISEMENT_NOT_EXISTED(2700, "Advertisement not existed", HttpStatus.NOT_FOUND),
-    INVALID_ADVERTISEMENT_DATE_RANGE(2701, "Start date must not be after end date", HttpStatus.BAD_REQUEST);
+    INVALID_ADVERTISEMENT_DATE_RANGE(2701, "Start date must not be after end date", HttpStatus.BAD_REQUEST),
+    ADVERTISEMENT_ALREADY_SENT(2702, "Advertisement has already been sent", HttpStatus.CONFLICT);
 
     private final int code;
     private final String message;

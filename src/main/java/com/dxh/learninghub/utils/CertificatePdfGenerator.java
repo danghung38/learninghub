@@ -1,4 +1,4 @@
-package com.dxh.learninghub.service;
+package com.dxh.learninghub.utils;
 
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;

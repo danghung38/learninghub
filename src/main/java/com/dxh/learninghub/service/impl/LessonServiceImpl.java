@@ -186,8 +186,8 @@ public class LessonServiceImpl implements LessonService {
         if (!isAdmin && !Objects.equals(currentUser.getId(), author.getId())) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
-        if (!isAdmin && chapter.getCourse().getStatus() == CourseStatus.DELEDED) {
-            throw new AppException(ErrorCode.COURSE_DELEDED_READ_ONLY);
+        if (!isAdmin && chapter.getCourse().getStatus() == CourseStatus.DELETED) {
+            throw new AppException(ErrorCode.COURSE_DELETED_READ_ONLY);
         }
     }
 
@@ -209,7 +209,7 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private void markAsDraft(Course course) {
-        if (course.getStatus() != CourseStatus.DELEDED
+        if (course.getStatus() != CourseStatus.DELETED
                 && course.getStatus() != CourseStatus.BANNED) {
             course.setStatus(CourseStatus.DRAFT);
         }

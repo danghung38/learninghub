@@ -48,30 +48,30 @@ public class AwsS3Service {
     @PostConstruct
     private void initS3Clients() {
         var credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
-        this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
-        this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(Region.US_EAST_1).build();
+        // Sửa Region.US_EAST_1 thành Region.AP_SOUTHEAST_1 cho cả s3Client và s3Presigner
+        this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.AP_SOUTHEAST_1).build();
+        this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(Region.AP_SOUTHEAST_1).build();
     }
-
     // --- Core Direct Upload
     public String uploadFile(MultipartFile file, String folder, UploadPolicy policy) {
         String fileName = FileUploadUtil.validate(file, policy);
         String objectKey = buildObjectKey(folder, UUID.randomUUID() + "_" + fileName);
-
-        try (InputStream inputStream = file.getInputStream()) {
+        try {
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(objectKey)
                     .contentType(file.getContentType())
                     .contentLength(file.getSize())
                     .build();
-            s3Client.putObject(request, RequestBody.fromInputStream(inputStream, file.getSize()));
+
+            // Sửa thành fromBytes để tránh lỗi lệch content-length
+            s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
             return objectKey;
         } catch (Exception e) {
             log.error("Failed to upload file to S3 folder {}", folder, e);
             throw new AppException(ErrorCode.UPLOAD_FAIL);
         }
     }
-
     // --- Presigned Uploads ---
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public PresignedUploadResponse generateVideoUploadUrl(String fileName, long fileSize) {
@@ -106,7 +106,7 @@ public class AwsS3Service {
 
     @Named("generateViewUrl")
     public String generateViewUrl(String objectKey) {
-        return getPresignedGetUrl(objectKey, Duration.ofMinutes(30), null);
+        return getPresignedGetUrl(objectKey, Duration.ofDays(7), null);
     }
 
     @Named("generateLessonViewUrl")
@@ -115,9 +115,12 @@ public class AwsS3Service {
         String objectKey = normalizeObjectKey(rawUrlOrKey);
         String contentType = resolveLessonContentType(objectKey);
 
-        return getPresignedGetUrl(objectKey, Duration.ofMinutes(5), builder -> {
-            builder.responseContentDisposition("inline").responseCacheControl("private, max-age=3600");
-            if (contentType != null) builder.responseContentType(contentType);
+        return getPresignedGetUrl(objectKey, Duration.ofHours(1), builder -> {
+            builder.responseContentDisposition("inline")
+                    .responseCacheControl("public, max-age=604800, immutable");
+            if (contentType != null) {
+                builder.responseContentType(contentType);
+            }
         });
     }
 

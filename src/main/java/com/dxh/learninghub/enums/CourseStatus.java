@@ -6,5 +6,5 @@ public enum CourseStatus {
     APPROVED,  // Đã duyệt
     REJECTED,  // Từ chối
     BANNED,    // Đã duyệt nhưng bị khóa
-    DELEDED    // Tác giả/admin đã xóa mềm
+    DELETED    // Tác giả/admin đã xóa mềm
 }
