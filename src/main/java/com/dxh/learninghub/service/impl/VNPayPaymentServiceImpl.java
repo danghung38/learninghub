@@ -284,12 +284,12 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
 
     private static String failureNotificationMessage(Payment payment) {
         String reason = switch (payment.getStatus()) {
-            case CANCELED -> "đã bị hủy";
-            case EXPIRED -> "đã hết hạn";
-            default -> "không thể hoàn tất";
+            case CANCELED -> "has been canceled";
+            case EXPIRED -> "has expired";
+            default -> "could not be completed";
         };
-        return "Giao dịch " + payment.getMerchantTransactionRef() + " " + reason
-                + ". Tài khoản của bạn chưa bị trừ tiền hoặc cộng điểm";
+        return "Transaction " + payment.getMerchantTransactionRef() + " " + reason
+                + ". Your account has not been charged or credited points";
     }
 
     private AdminPaymentResponse toAdminResponse(Payment payment) {
