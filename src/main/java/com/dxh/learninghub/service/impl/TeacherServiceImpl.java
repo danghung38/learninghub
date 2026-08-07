@@ -30,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -77,29 +79,29 @@ public class TeacherServiceImpl implements TeacherService {
             throw new AppException(ErrorCode.REGISTER_TEACHER_INVALID);
         }
 
+        // 1. Validate bắt buộc có cả 2 file
         FileUploadUtil.validate(cv, UploadPolicy.TEACHER_DOCUMENT);
         FileUploadUtil.validate(certificate, UploadPolicy.TEACHER_DOCUMENT);
+
         user.setExpertise(request.expertise());
         user.setYearsOfExperience(request.yearsOfExperience());
         user.setBio(request.bio());
         user.setFacebookLink(request.facebookLink());
 
-        // Đăng ký lần đầu -> chưa có file cũ, upload thẳng, không cần lo thứ tự xóa/tạo
-        awsS3Service.uploadFile(cv, "teachers/" + user.getId() + "/cv", UploadPolicy.TEACHER_DOCUMENT);
-        awsS3Service.uploadFile(certificate, "teachers/" + user.getId() + "/certificates", UploadPolicy.TEACHER_DOCUMENT);
-
+        // 2. Upload file mới (đăng ký lần đầu không cần lo file cũ)
+        String folder = "teachers/" + user.getId();
+        user.setCvUrl(awsS3Service.uploadFile(cv, folder + "/cv", UploadPolicy.TEACHER_DOCUMENT));
+        user.setCertificateUrl(awsS3Service.uploadFile(certificate, folder + "/certificates", UploadPolicy.TEACHER_DOCUMENT));
 
         user.setRegistrationStatus(RegistrationStatus.PENDING);
-
         User savedUser = userRepository.save(user);
 
+        // Gửi thông báo cho Admin
         userRepository.findFirstByRoles_Name(RoleEnum.ADMIN.name())
                 .ifPresent(admin -> notificationService.createNotification(
-                        admin,
-                        savedUser,
+                        admin, savedUser,
                         "New teacher application",
-                        savedUser.getFullName()
-                                + " submitted a teacher application",
+                        savedUser.getFullName() + " submitted a teacher application",
                         "/admin/teachers"
                 ));
 
@@ -120,37 +122,33 @@ public class TeacherServiceImpl implements TeacherService {
             throw new AppException(ErrorCode.TEACHER_REREGISTRATION_NOT_ALLOWED);
         }
 
+        // 1. Validate bắt buộc có file khi re-register
         FileUploadUtil.validate(cv, UploadPolicy.TEACHER_DOCUMENT);
         FileUploadUtil.validate(certificate, UploadPolicy.TEACHER_DOCUMENT);
 
         String oldCv = user.getCvUrl();
         String oldCertificate = user.getCertificateUrl();
-        String newCv = awsS3Service.uploadFile(cv, "teachers/" + user.getId() + "/cv", UploadPolicy.TEACHER_DOCUMENT);
-        String newCertificate = awsS3Service.uploadFile(certificate, "teachers/" + user.getId() + "/certificates", UploadPolicy.TEACHER_DOCUMENT);
+        String folder = "teachers/" + user.getId();
 
-
-
+        user.setCvUrl(awsS3Service.uploadFile(cv, folder + "/cv", UploadPolicy.TEACHER_DOCUMENT));
+        user.setCertificateUrl(awsS3Service.uploadFile(certificate, folder + "/certificates", UploadPolicy.TEACHER_DOCUMENT));
 
         user.setExpertise(request.expertise());
         user.setYearsOfExperience(request.yearsOfExperience());
         user.setBio(request.bio());
         user.setFacebookLink(request.facebookLink());
-        user.setCvUrl(newCv);
-        user.setCertificateUrl(newCertificate);
         user.setRegistrationStatus(RegistrationStatus.PENDING);
 
         User savedUser = userRepository.save(user);
 
-        awsS3Service.deleteFileFromS3(oldCv);
-        awsS3Service.deleteFileFromS3(oldCertificate);
+        registerFileDeletion(oldCv);
+        registerFileDeletion(oldCertificate);
 
         userRepository.findFirstByRoles_Name(RoleEnum.ADMIN.name())
                 .ifPresent(admin -> notificationService.createNotification(
-                        admin,
-                        savedUser,
+                        admin, savedUser,
                         "Teacher application resubmitted",
-                        savedUser.getFullName()
-                                + " resubmitted a teacher application",
+                        savedUser.getFullName() + " resubmitted a teacher application",
                         "/admin/teachers"
                 ));
 
@@ -169,27 +167,35 @@ public class TeacherServiceImpl implements TeacherService {
 
         FileUploadUtil.validateIfPresent(cv, UploadPolicy.TEACHER_DOCUMENT);
         FileUploadUtil.validateIfPresent(certificate, UploadPolicy.TEACHER_DOCUMENT);
+
         userMapper.updateTeacherFromRequest(request, user);
 
-        //replace file cũ
-        boolean hasNewCv = cv != null && !cv.isEmpty();
-        boolean hasNewCertificate = certificate != null && !certificate.isEmpty();
+        String folder = "teachers/" + user.getId();
         String oldCv = user.getCvUrl();
         String oldCertificate = user.getCertificateUrl();
-        String newCv = hasNewCv
-                ? awsS3Service.uploadFile(cv, "teachers/" + user.getId() + "/cv", UploadPolicy.TEACHER_DOCUMENT)
-                : null;
-        String newCertificate = hasNewCertificate
-                ? awsS3Service.uploadFile(certificate, "teachers/" + user.getId() + "/certificates", UploadPolicy.TEACHER_DOCUMENT)
-                : null;
 
-        if (hasNewCv) user.setCvUrl(newCv);
-        if (hasNewCertificate) user.setCertificateUrl(newCertificate);
+        if (cv != null && !cv.isEmpty()) {
+            user.setCvUrl(awsS3Service.uploadFile(cv, folder + "/cv", UploadPolicy.TEACHER_DOCUMENT));
+            registerFileDeletion(oldCv);
+        }
+        if (certificate != null && !certificate.isEmpty()) {
+            user.setCertificateUrl(awsS3Service.uploadFile(certificate, folder + "/certificates", UploadPolicy.TEACHER_DOCUMENT));
+            registerFileDeletion(oldCertificate);
+        }
 
         User savedUser = userRepository.save(user);
-        if (hasNewCv) awsS3Service.deleteFileFromS3(oldCv);
-        if (hasNewCertificate) awsS3Service.deleteFileFromS3(oldCertificate);
         return userMapper.toTeacherResponse(savedUser);
+    }
+
+    private void registerFileDeletion(String fileUrl) {
+        if (fileUrl != null && !fileUrl.isBlank()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    awsS3Service.deleteFileFromS3(fileUrl);
+                }
+            });
+        }
     }
 
     private User getCurrentTeacher() {
@@ -234,6 +240,24 @@ public class TeacherServiceImpl implements TeacherService {
                 .totalElements(students.getTotalElements())
                 .items(students.stream().map(this::toStudentResponse).toList())
                 .build();
+    }
+
+    private String processFileUpload(MultipartFile file, String folder, String oldFileUrl, UploadPolicy policy) {
+        if (file == null || file.isEmpty()) return oldFileUrl;
+
+        FileUploadUtil.validate(file, policy);
+
+        String newFileUrl = awsS3Service.uploadFile(file, folder, policy);
+
+        if (oldFileUrl != null && !oldFileUrl.isBlank()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    awsS3Service.deleteFileFromS3(oldFileUrl);
+                }
+            });
+        }
+        return newFileUrl;
     }
 
     private TeacherCourseStudentResponse toStudentResponse(Enrollment enrollment) {
