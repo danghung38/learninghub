@@ -7,6 +7,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,14 @@ public class AdvertisementDeactivationJob {
 
     @Value("${jobs.advertisement-deactivation.zone:Asia/Ho_Chi_Minh}")
     String zone;
+
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void runOnStartup() {
+        log.info("Triggering advertisement deactivation on application startup...");
+        deactivateExpiredAdvertisements();
+    }
 
     @Transactional
     @Scheduled(
