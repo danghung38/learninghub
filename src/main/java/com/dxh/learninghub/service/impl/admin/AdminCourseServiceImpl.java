@@ -13,6 +13,7 @@ import com.dxh.learninghub.repo.CourseRepository;
 import com.dxh.learninghub.repo.specification.CourseSpecification;
 import com.dxh.learninghub.service.interfac.NotificationService;
 import com.dxh.learninghub.service.interfac.admin.AdminCourseService;
+import com.dxh.learninghub.utils.CurrentUserProvider;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,6 +36,7 @@ public class AdminCourseServiceImpl implements AdminCourseService {
     CourseRepository courseRepository;
     CourseMapper courseMapper;
     NotificationService notificationService;
+    CurrentUserProvider currentUser;
 
     @Override
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
@@ -54,7 +56,8 @@ public class AdminCourseServiceImpl implements AdminCourseService {
         Course course = findCourse(id);
         validatePending(course);
         course.setStatus(CourseStatus.APPROVED);
-        notifyCourseAuthor(course, "Course approved", "Your course \"" + course.getTitle() + "\" has been approved");
+        notifyCourseAuthor(course, "Course approved",
+                "Your course \"" + course.getTitle() + "\" has been approved");
         return courseMapper.courseToCourseResponse(course);
     }
 
@@ -106,7 +109,7 @@ public class AdminCourseServiceImpl implements AdminCourseService {
     private void notifyCourseAuthor(Course course, String title, String message) {
         notificationService.createNotification(
                 course.getAuthor(),
-                null,
+                currentUser.getCurrentUser(),
                 title,
                 message,
                 "/teacher/courses/" + course.getId() + "/preview");

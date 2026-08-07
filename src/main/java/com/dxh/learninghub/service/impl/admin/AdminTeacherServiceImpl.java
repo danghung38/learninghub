@@ -12,6 +12,7 @@ import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.interfac.NotificationService;
 import com.dxh.learninghub.service.interfac.admin.AdminTeacherService;
+import com.dxh.learninghub.utils.CurrentUserProvider;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,6 +34,7 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
     RoleRepository roleRepository;
     UserMapper userMapper;
     NotificationService notificationService;
+    CurrentUserProvider currentUser;
 
     @Override
     @Transactional(readOnly = true)
@@ -68,10 +70,10 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
 
         notificationService.createNotification(
                 user,
-                null,
+                currentUser.getCurrentUser(),
                 "Teacher application approved",
                 "Your teacher application has been approved",
-                null);
+                "/teacher/profile");
     }
 
     @Override
@@ -88,10 +90,10 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
 
         notificationService.createNotification(
                 user,
-                null,
+                currentUser.getCurrentUser(),
                 "Teacher application rejected",
                 "Your teacher application has been rejected",
-                null);
+                "/dashboard/teacher-application");
     }
 
     @Override
