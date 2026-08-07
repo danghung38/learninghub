@@ -108,10 +108,10 @@ public class NotificationServiceImpl implements NotificationService {
         Notification notification = notificationRepository.save(
                 Notification.builder()
                         .user(receiver)
+                        .sender(sender)
                         .title(title.trim())
                         .message(message.trim())
                         .url(url)
-                        .avatarUrl(sender == null ? null : sender.getAvatar())
                         .isRead(false)
                         .build());
 

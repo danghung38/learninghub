@@ -30,6 +30,11 @@ public class Notification extends AbstractEntity<Long>{
     @JsonIgnore
     User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", nullable = true)
+    @JsonIgnore
+    User sender; // Người gửi
+
     @Column(name = "title", nullable = false, length = 255)
     String title;
 
@@ -42,9 +47,6 @@ public class Notification extends AbstractEntity<Long>{
 
     @Column(name = "url")
     String url;
-
-    @Column(name = "avatarUrl")
-    String avatarUrl;
 
     @PrePersist
     private void prePersist() {
