@@ -33,7 +33,7 @@ public class EmailService {
         Map<String, Object> body = Map.of(
                 "sender",      Map.of("email", fromEmail, "name", fromName),
                 "to",          List.of(Map.of("email", to)),
-                "subject",     "Verify your account - Learning Hub",
+                "subject",     "Verify your account - LearningHub",
                 "htmlContent", buildOtpHtml(name, otp)
         );
         send(body, "OTP");
@@ -43,7 +43,7 @@ public class EmailService {
         Map<String, Object> body = Map.of(
                 "sender",      Map.of("email", fromEmail, "name", fromName),
                 "to",          List.of(Map.of("email", to)),
-                "subject",     "Reset your password - Learning Hub",
+                "subject",     "Reset your password - LearningHub",
                 "htmlContent", buildResetPasswordHtml(name, resetCode)
         );
         send(body, "ResetPassword");
@@ -58,7 +58,7 @@ public class EmailService {
         Map<String, Object> body = Map.of(
                 "sender",      Map.of("email", fromEmail, "name", fromName),
                 "to",          List.of(Map.of("email", to)),
-                "subject",     title + " - Learning Hub",
+                "subject",     title + " - LearningHub",
                 "htmlContent", buildAdvertisementHtml(name, title, description, link)
         );
         send(body, "Advertisement");
