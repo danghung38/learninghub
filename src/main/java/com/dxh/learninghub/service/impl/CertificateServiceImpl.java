@@ -6,22 +6,23 @@ import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.entity.Certificate;
 import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.User;
+import com.dxh.learninghub.enums.CourseStatus; // 👈 Import CourseStatus
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
+import com.dxh.learninghub.mapper.CertificateMapper;
 import com.dxh.learninghub.repo.CertificateRepository;
 import com.dxh.learninghub.repo.CourseRepository;
-import com.dxh.learninghub.mapper.CertificateMapper;
-import com.dxh.learninghub.utils.CertificatePdfGenerator;
 import com.dxh.learninghub.service.interfac.CertificateService;
 import com.dxh.learninghub.service.interfac.LearningProgressService;
+import com.dxh.learninghub.utils.CertificatePdfGenerator;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -45,7 +46,10 @@ public class CertificateServiceImpl implements CertificateService {
     @Transactional(readOnly = true)
     public PageResponse<CertificateResponse> getMyCertificates(Pageable pageable) {
         User user = currentUserProvider.getCurrentUser();
-        Page<Certificate> page = certificateRepository.findAllByUserId(user.getId(), pageable);
+
+        // 1. Chỉ lấy chứng chỉ của các khóa học đã APPROVED
+        Page<Certificate> page = certificateRepository.findAllByUserIdAndCourseStatus(
+                user.getId(), CourseStatus.APPROVED, pageable);
 
         return PageResponse.<CertificateResponse>builder()
                 .pageNo(pageable.getPageNumber() + 1)
@@ -60,8 +64,17 @@ public class CertificateServiceImpl implements CertificateService {
     @Transactional
     public byte[] downloadCertificatePdf(Long courseId) {
         User user = currentUserProvider.getCurrentUser();
+
+        // 2. Validate khóa học tồn tại & phải có trạng thái APPROVED
+        Course course = courseRepository.findWithAuthorById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
+
+        if (course.getStatus() != CourseStatus.APPROVED) {
+            throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE); // hoặc dùng ErrorCode phù hợp
+        }
+
         Certificate certificate = certificateRepository.findByUserIdAndCourseId(user.getId(), courseId)
-                .orElseGet(() -> createCertificate(user, courseId));
+                .orElseGet(() -> createCertificate(user, course));
 
         // Render PDF trực tiếp từ dữ liệu trong DB
         return pdfGenerator.generate(
@@ -73,7 +86,6 @@ public class CertificateServiceImpl implements CertificateService {
         );
     }
 
-
     @Override
     @Transactional(readOnly = true)
     public CertificateVerificationResponse verify(String verificationCode) {
@@ -81,16 +93,17 @@ public class CertificateServiceImpl implements CertificateService {
                         verificationCode.trim().toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new AppException(ErrorCode.CERTIFICATE_NOT_EXISTED));
 
+        if (certificate.getCourse().getStatus() != CourseStatus.APPROVED) {
+            throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE);
+        }
+
         return certificateMapper.toVerificationResponse(certificate);
     }
 
-    private Certificate createCertificate(User user, Long courseId) {
-        if (!Boolean.TRUE.equals(learningProgressService.getCourseProgress(courseId).completed())) {
+    private Certificate createCertificate(User user, Course course) {
+        if (!Boolean.TRUE.equals(learningProgressService.getCourseProgress(course.getId()).completed())) {
             throw new AppException(ErrorCode.COURSE_NOT_COMPLETED);
         }
-
-        Course course = courseRepository.findWithAuthorById(courseId)
-                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
 
         String verificationCode = "LH-" + UUID.randomUUID().toString()
                 .replace("-", "").substring(0, 16).toUpperCase(Locale.ROOT);
