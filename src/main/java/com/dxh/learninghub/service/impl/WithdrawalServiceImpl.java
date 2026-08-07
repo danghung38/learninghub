@@ -22,7 +22,6 @@ import com.dxh.learninghub.repo.WithdrawalRepository;
 import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.interfac.NotificationService;
 import com.dxh.learninghub.service.interfac.WithdrawalService;
-import com.dxh.learninghub.utils.storage.FileUploadUtil;
 import com.dxh.learninghub.utils.storage.UploadPolicy;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import jakarta.annotation.PostConstruct;
@@ -186,7 +185,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
         notificationService.createNotification(
                 withdrawal.getTeacher(),
-                null,
+                admin,
                 "Withdrawal paid",
                 "Your withdrawal request #" + withdrawal.getId() + " has been paid",
                 "/teacher/withdrawals");
@@ -219,7 +218,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
 
         notificationService.createNotification(
                 teacher,
-                null,
+                currentUserProvider.getCurrentUser(),
                 "Withdrawal rejected",
                 "Your withdrawal request #" + withdrawal.getId()
                         + " was rejected: " + request.reason().trim(),
