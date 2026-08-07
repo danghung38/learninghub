@@ -33,7 +33,7 @@ spring:
   brevo:
     api-key: ${BREVO_API_KEY}
     from-email: ${BREVO_FROM_EMAIL}
-    from-name: Learning Hub
+    from-name: LearningHub
   security:
     oauth2:
       client:
