@@ -55,22 +55,14 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
 
         Role teacherRole = roleRepository
                 .findByName(RoleEnum.TEACHER.name())
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.ROLE_NOT_EXISTED)
-                );
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
 
         Set<Role> roles = getMutableRoles(user);
 
         boolean alreadyTeacher = roles.stream()
-                .anyMatch(role ->
-                        RoleEnum.TEACHER.name()
-                                .equalsIgnoreCase(role.getName())
-                );
+                .anyMatch(role -> RoleEnum.TEACHER.name().equalsIgnoreCase(role.getName()));
 
-        if (!alreadyTeacher) {
-            roles.add(teacherRole);
-        }
-
+        if (!alreadyTeacher) roles.add(teacherRole);
         user.setRoles(roles);
         user.setRegistrationStatus(RegistrationStatus.APPROVED);
 
@@ -111,28 +103,16 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
         Set<Role> roles = getMutableRoles(user);
 
         Role teacherRole = roles.stream()
-                .filter(role ->
-                        RoleEnum.TEACHER.name()
-                                .equalsIgnoreCase(role.getName())
-                )
+                .filter(role -> RoleEnum.TEACHER.name().equalsIgnoreCase(role.getName()))
                 .findFirst()
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.USER_NOT_TEACHER)
-                );
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_TEACHER));
 
         roles.remove(teacherRole);
 
-        /*
-         * Nếu TEACHER là role duy nhất thì sau khi xóa cần thêm USER,
-         * tránh để tài khoản không còn role nào.
-         */
         if (roles.isEmpty()) {
             Role userRole = roleRepository
                     .findByName(RoleEnum.USER.name())
-                    .orElseThrow(() ->
-                            new AppException(ErrorCode.ROLE_NOT_EXISTED)
-                    );
-
+                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
             roles.add(userRole);
         }
 
@@ -141,17 +121,11 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
     }
 
     private User findUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new AppException(ErrorCode.USER_NOT_EXISTED)
-                );
+        return userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
     private Set<Role> getMutableRoles(User user) {
-        if (user.getRoles() == null) {
-            return new HashSet<>();
-        }
-
+        if (user.getRoles() == null) return new HashSet<>();
         return new HashSet<>(user.getRoles());
     }
 }

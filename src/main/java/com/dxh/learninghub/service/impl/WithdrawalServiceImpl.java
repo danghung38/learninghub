@@ -174,7 +174,6 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     public AdminWithdrawalResponse markAsPaid(
             Long withdrawalId,
             MultipartFile file) {
-        FileUploadUtil.validate(file, UploadPolicy.PAYMENT_PROOF);
         Withdrawal withdrawal = findPendingWithdrawalForUpdate(withdrawalId);
         User admin = currentUserProvider.getCurrentUser();
         String paymentProofObjectKey = awsS3Service.uploadFile(file,

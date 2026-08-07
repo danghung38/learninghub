@@ -125,7 +125,9 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         }
 
         payment.setResponseCode(params.get("vnp_ResponseCode"));
-        payment.setGatewayTransactionNo(blankToNull(params.get("vnp_TransactionNo")));
+        // Sửa đoạn gán gatewayTransactionNo trong processIpn():
+        String gatewayTxnNo = params.get("vnp_TransactionNo");
+        payment.setGatewayTransactionNo(normalizeTransactionNo(gatewayTxnNo));
         payment.setBankCode(blankToNull(params.get("vnp_BankCode")));
 
         boolean successful = "00".equals(params.get("vnp_ResponseCode"))
@@ -322,6 +324,13 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             log.warn("VNPAY callback contains invalid vnp_PayDate: {}", payDate);
             return null;
         }
+    }
+
+    private String normalizeTransactionNo(String txnNo) {
+        if (!StringUtils.hasText(txnNo) || "0".equals(txnNo.trim())) {
+            return null; // Trả về NULL để DB không bị tính trùng lặp Unique
+        }
+        return txnNo.trim();
     }
 
     private static String newTransactionRef() {

@@ -92,7 +92,7 @@ public enum ErrorCode {
     CANNOT_BUY_OWN_COURSE(1304, "You cannot purchase your own course", HttpStatus.BAD_REQUEST),
     NOT_COURSE_OWNER(1305, "You are not the owner of this course", HttpStatus.FORBIDDEN),
     COURSE_ALREADY_DELEDED(1306, "Course is already soft-deleted", HttpStatus.BAD_REQUEST),
-    COURSE_DELEDED_READ_ONLY(1307, "Soft-deleted courses cannot be modified", HttpStatus.CONFLICT),
+    COURSE_DELETED_READ_ONLY(1307, "Soft-deleted courses cannot be modified", HttpStatus.CONFLICT),
     COURSE_NOT_BANNED(1308, "Course is not banned", HttpStatus.BAD_REQUEST),
     COURSE_BANNED_CANNOT_DELETE(1309, "A banned course cannot be soft-deleted by its owner", HttpStatus.CONFLICT),
     COURSE_NOT_DRAFT(1310, "Only a draft course can be submitted for approval", HttpStatus.CONFLICT),

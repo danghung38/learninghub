@@ -39,22 +39,17 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public UserResponse getUserById(Long userId) {
-        User user = userRepository.findAllByIdIn(List.of(userId)).stream()
-                .findFirst()
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
         return userMapper.toUserResponse(user);
     }
 
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public void banUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        if (user.getBanned()) {
-            throw new AppException(ErrorCode.USER_ALREADY_BANNED);
-        }
-
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        if (user.getBanned()) throw new AppException(ErrorCode.USER_ALREADY_BANNED);
         user.setBanned(true);
         userRepository.save(user);
     }
@@ -62,13 +57,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public void unbanUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        if (!user.getBanned()) {
-            throw new AppException(ErrorCode.USER_NOT_BANNED);
-        }
-
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        if (!user.getBanned()) throw new AppException(ErrorCode.USER_NOT_BANNED);
         user.setBanned(false);
         userRepository.save(user);
     }
@@ -86,14 +76,9 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_EXISTED));
 
         boolean alreadyHasRole = user.getRoles().stream()
-                .anyMatch(existingRole ->
-                        existingRole.getName().equalsIgnoreCase(role.getName())
-                );
+                .anyMatch(existingRole -> existingRole.getName().equalsIgnoreCase(role.getName()));
 
-        if (alreadyHasRole) {
-            throw new AppException(ErrorCode.USER_ALREADY_HAS_ROLE);
-        }
-
+        if (alreadyHasRole) throw new AppException(ErrorCode.USER_ALREADY_HAS_ROLE);
         user.getRoles().add(role);
         userRepository.save(user);
     }
@@ -112,9 +97,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.USER_DOES_NOT_HAVE_ROLE));
 
-        if (user.getRoles().size() <= 1) {
-            throw new AppException(ErrorCode.USER_MUST_HAVE_AT_LEAST_ONE_ROLE);
-        }
+        if (user.getRoles().size() <= 1) throw new AppException(ErrorCode.USER_MUST_HAVE_AT_LEAST_ONE_ROLE);
 
         user.getRoles().remove(roleToRemove);
         userRepository.save(user);
@@ -136,20 +119,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public PageResponse<UserResponse> searchUsers(Pageable pageable, UserSearchFilterRequest filter) {
-        // Tránh lỗi null pointer nếu lỡ không truyền filter
-        String normalizedRole = null;
-        if (filter != null && filter.role() != null && !filter.role().isBlank()) {
-            normalizedRole = parseRole(filter.role()).name();
-        }
-
-        String username = filter != null ? filter.username() : null;
-        String fullName = filter != null ? filter.fullName() : null;
-        Boolean banned = filter != null ? filter.banned() : null;
-        Boolean enabled = filter != null ? filter.enabled() : null;
-
-        // 1. Tạo Specification từ DTO Filter
         Specification<User> spec = UserSpecification.getUsersWithFilter(filter);
-        // 2. Thực thi tìm kiếm với pageable gốc
         Page<User> users = userRepository.findAll(spec, pageable);
         return toPageResponse(users);
     }
@@ -162,8 +132,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     private PageResponse<UserResponse> toPageResponse(Page<User> page) {
-        // Nhờ có @BatchSize(size = 20) trên User.roles,
-        // việc map trực tiếp qua userMapper bên dưới sẽ KHÔNG BỊ N+1!
+        // Nhờ có @BatchSize(size = 20) không bị N+1
         List<UserResponse> responses = page.stream()
                 .map(userMapper::toUserResponse)
                 .toList();
@@ -175,10 +144,6 @@ public class AdminUserServiceImpl implements AdminUserService {
                 .totalElements(page.getTotalElements())
                 .items(responses)
                 .build();
-    }
-
-    private String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 
 }

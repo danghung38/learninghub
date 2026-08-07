@@ -38,6 +38,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -95,7 +97,7 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
 
         User currentUser = currentUserProvider.getCurrentUser();
-        if (course.getStatus() == CourseStatus.DELEDED && !isAdmin(currentUser)) {
+        if (course.getStatus() == CourseStatus.DELETED && !currentUser.isAdmin()) {
             throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE);
         }
         validateAdminOrCourseOwner(course, currentUser);
@@ -106,7 +108,7 @@ public class CourseServiceImpl implements CourseService {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public List<CourseResponse> getMyCourses() {
         User user = currentUserProvider.getCurrentUser();
-        return courseRepository.findByAuthorAndStatusNot(user, CourseStatus.DELEDED)
+        return courseRepository.findByAuthorAndStatusNot(user, CourseStatus.DELETED)
                 .stream()
                 .map(courseMapper::courseToCourseResponse)
                 .toList();
@@ -141,9 +143,9 @@ public class CourseServiceImpl implements CourseService {
     public CourseUploadResponse updateCourse(Long courseId, CourseUpdateRequest request, MultipartFile thumbnail) {
         FileUploadUtil.validateIfPresent(thumbnail, UploadPolicy.IMAGE);
         Course course = getManagedCourse(courseId);
-        if (course.getStatus() == CourseStatus.DELEDED
-                && !isAdmin(currentUserProvider.getCurrentUser())) {
-            throw new AppException(ErrorCode.COURSE_DELEDED_READ_ONLY);
+        if (course.getStatus() == CourseStatus.DELETED
+                && !currentUserProvider.getCurrentUser().isAdmin()) {
+            throw new AppException(ErrorCode.COURSE_DELETED_READ_ONLY);
         }
 
         CourseStatus oldStatus = course.getStatus();
@@ -159,14 +161,19 @@ public class CourseServiceImpl implements CourseService {
                     UploadPolicy.IMAGE));
         }
 
-        boolean editableLifecycle = oldStatus != CourseStatus.DELEDED
+        boolean editableLifecycle = oldStatus != CourseStatus.DELETED
                 && oldStatus != CourseStatus.BANNED;
         course.setStatus(editableLifecycle ? CourseStatus.DRAFT : oldStatus);
 
         Course savedCourse = courseRepository.save(course);
 
         if (hasNewThumbnail && oldThumbnail != null) {
-            awsS3Service.deleteFileFromS3(oldThumbnail);
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    awsS3Service.deleteFileFromS3(oldThumbnail);
+                }
+            });
         }
 
         return courseMapper.courseToCourseUploadResponse(savedCourse);
@@ -218,13 +225,13 @@ public class CourseServiceImpl implements CourseService {
         Course course = getManagedCourse(courseId);
         User currentUser = currentUserProvider.getCurrentUser();
 
-        if (course.getStatus() == CourseStatus.DELEDED) {
+        if (course.getStatus() == CourseStatus.DELETED) {
             throw new AppException(ErrorCode.COURSE_ALREADY_DELEDED);
         }
-        if (course.getStatus() == CourseStatus.BANNED && !isAdmin(currentUser)) {
+        if (course.getStatus() == CourseStatus.BANNED && !currentUser.isAdmin()) {
             throw new AppException(ErrorCode.COURSE_BANNED_CANNOT_DELETE);
         }
-        course.setStatus(CourseStatus.DELEDED);
+        course.setStatus(CourseStatus.DELETED);
     }
 
     @Override
@@ -258,17 +265,10 @@ public class CourseServiceImpl implements CourseService {
     private void validateAdminOrCourseOwner(Course course, User currentUser) {
         boolean isCourseOwner = course.getAuthor() != null
                 && Objects.equals(course.getAuthor().getId(), currentUser.getId());
+        if (!currentUser.isAdmin() && !isCourseOwner) throw new AppException(ErrorCode.NOT_COURSE_OWNER);
 
-        if (!isAdmin(currentUser) && !isCourseOwner) {
-            throw new AppException(ErrorCode.NOT_COURSE_OWNER);
-        }
     }
 
-
-    private boolean isAdmin(User user) {
-        return user.getRoles().stream()
-                .anyMatch(role -> RoleEnum.ADMIN.name().equals(role.getName()));
-    }
 
     private void notifyAdmin(User sender, String title, String message, String url) {
         userRepository.findFirstByRoles_Name(RoleEnum.ADMIN.name())

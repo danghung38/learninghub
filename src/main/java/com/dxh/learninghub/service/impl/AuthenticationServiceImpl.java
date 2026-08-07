@@ -100,13 +100,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .findByUsernameOrEmail(request.username(), request.username())
                 .orElse(null);
 
-        boolean invalidCredentials =
-                user == null
+        boolean invalidCredentials = user == null
                         || user.getPassword() == null
-                        || !passwordEncoder.matches(
-                        request.password(),
-                        user.getPassword()
-                );
+                        || !passwordEncoder.matches(request.password(), user.getPassword());
 
         if (invalidCredentials) {
             loginAttemptService.loginFailed(request.username(), ip);
@@ -233,11 +229,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .email(email)
                 .username(email)
                 .password(null)
-                .fullName(
-                        fullName != null && !fullName.isBlank()
-                                ? fullName
-                                : email
-                )
+                .fullName(fullName != null && !fullName.isBlank() ? fullName : email)
                 .avatar(avatar)
                 .enabled(true)
                 .banned(false)

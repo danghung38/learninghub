@@ -43,7 +43,7 @@ public class DeletedCourseContentCleanupJob {
     public void cleanupDeletedCourseContent() {
         try {
             List<Course> deletedCourses = courseRepository.findAll().stream()
-                    .filter(course -> course.getStatus() == CourseStatus.DELEDED)
+                    .filter(course -> course.getStatus() == CourseStatus.DELETED)
                     .toList();
 
             int deletedChapters = 0;

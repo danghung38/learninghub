@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +44,12 @@ public class S3OrphanCleanupJob {
 
     @Value("${jobs.s3-orphan-cleanup.dry-run:true}")
     boolean dryRun;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void runOnStartup() {
+        log.info("Triggering S3 orphan cleanup on application startup...");
+        cleanupOrphanObjects();
+    }
 
     @Scheduled(cron = "${jobs.s3-orphan-cleanup.cron:0 0 3 * * *}", zone = "${jobs.s3-orphan-cleanup.zone:Asia/Ho_Chi_Minh}")
     public void cleanupOrphanObjects() {

@@ -220,7 +220,7 @@ public class TeacherServiceImpl implements TeacherService {
         if (!isAdmin && !isCourseOwner) {
             throw new AppException(ErrorCode.NOT_COURSE_OWNER);
         }
-        if (!isAdmin && course.getStatus() == CourseStatus.DELEDED) {
+        if (!isAdmin && course.getStatus() == CourseStatus.DELETED) {
             throw new AppException(ErrorCode.COURSE_NOT_AVAILABLE);
         }
 

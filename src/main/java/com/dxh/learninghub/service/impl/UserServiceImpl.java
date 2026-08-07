@@ -21,7 +21,6 @@ import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.CooldownService;
 import com.dxh.learninghub.service.EmailService;
 import com.dxh.learninghub.service.interfac.UserService;
-import com.dxh.learninghub.utils.storage.FileUploadUtil;
 import com.dxh.learninghub.utils.storage.UploadPolicy;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import lombok.AccessLevel;
@@ -32,6 +31,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.SecureRandom;
@@ -209,7 +210,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserUpdateResponse updateMyUser(UserUpdateRequest request, MultipartFile file) {
-        FileUploadUtil.validateIfPresent(file, UploadPolicy.AVATAR);
         User currentUser = currentUserProvider.getCurrentUser();
         User user = userRepository.findByIdForUpdate(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -217,20 +217,20 @@ public class UserServiceImpl implements UserService {
         // xử lý toàn bộ partial update (bỏ qua null)
         userMapper.updateUserFromRequest(request, user);
 
-        String oldAvatar = null;
+        String oldAvatar = user.getAvatar();
         if (file != null && !file.isEmpty()) {
-            oldAvatar = user.getAvatar();
-            // Gán kết quả trả về từ S3 vào biến filePath (hoặc objectKey)
-            String newAvatarKey = awsS3Service.uploadFile(file, "avatars/" + user.getId(), UploadPolicy.AVATAR);
-
-            // Cập nhật đường dẫn mới vào entity user
-            user.setAvatar(newAvatarKey);
+            user.setAvatar(awsS3Service.uploadFile(file, "avatars/" + user.getId(), UploadPolicy.AVATAR));
         }
 
         UserUpdateResponse response = userMapper.toUserUpdateResponse(userRepository.save(user));
 
-        if (oldAvatar != null) {
-            awsS3Service.deleteFileFromS3(oldAvatar);
+        if (oldAvatar != null && !oldAvatar.isBlank()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    awsS3Service.deleteFileFromS3(oldAvatar);
+                }
+            });
         }
 
         return response;

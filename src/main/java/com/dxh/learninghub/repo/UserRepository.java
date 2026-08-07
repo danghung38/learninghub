@@ -38,5 +38,5 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Page<User> findPendingTeacherApplications(Pageable pageable);
 
     @EntityGraph(attributePaths = "roles")
-    List<User> findAllByIdIn(Collection<Long> userIds);
+    Optional<User> findById(Long id);
 }

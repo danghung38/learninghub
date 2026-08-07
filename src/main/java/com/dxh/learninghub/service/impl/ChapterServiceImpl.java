@@ -10,7 +10,6 @@ import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.Lesson;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.CourseStatus;
-import com.dxh.learninghub.enums.RoleEnum;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.mapper.ChapterMapper;
@@ -124,18 +123,18 @@ public class ChapterServiceImpl implements ChapterService {
 
     private void validateCanManage(Course course, ErrorCode ownershipError) {
         User user = currentUserProvider.getCurrentUser();
-        boolean admin = user.getRoles().stream().anyMatch(role -> RoleEnum.ADMIN.name().equals(role.getName()));
+        boolean admin = user.isAdmin();
 
         if (!admin && !course.getAuthor().getId().equals(user.getId())) {
             throw new AppException(ownershipError);
         }
-        if (!admin && course.getStatus() == CourseStatus.DELEDED) {
-            throw new AppException(ErrorCode.COURSE_DELEDED_READ_ONLY);
+        if (!admin && course.getStatus() == CourseStatus.DELETED) {
+            throw new AppException(ErrorCode.COURSE_DELETED_READ_ONLY);
         }
     }
 
     private void markAsDraft(Course course) {
-        if (course.getStatus() != CourseStatus.DELEDED
+        if (course.getStatus() != CourseStatus.DELETED
                 && course.getStatus() != CourseStatus.BANNED) {
             course.setStatus(CourseStatus.DRAFT);
         }

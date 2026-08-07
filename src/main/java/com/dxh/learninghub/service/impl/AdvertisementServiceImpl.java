@@ -27,6 +27,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -68,8 +70,6 @@ public class AdvertisementServiceImpl implements AdvertisementService {
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public AdvertisementResponse update(Long id, AdvertisementUpdateRequest request, MultipartFile image) {
-
-        FileUploadUtil.validateIfPresent(image, UploadPolicy.IMAGE);
         Advertisement advertisement = findAdvertisement(id);
         String oldImage = advertisement.getImage();
         advertisementMapper.update(request, advertisement);
@@ -87,14 +87,19 @@ public class AdvertisementServiceImpl implements AdvertisementService {
         }
 
         advertisement.setLink(buildCourseLink(advertisement.getCourse()));
-
-        // Editing the content creates a new delivery version.
         advertisement.setSent(false);
 
         Advertisement savedAdvertisement = advertisementRepository.save(advertisement);
-        if (hasNewImage) {
-            awsS3Service.deleteFileFromS3(oldImage);
+
+        if (hasNewImage && oldImage != null && !oldImage.isBlank()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    awsS3Service.deleteFileFromS3(oldImage);
+                }
+            });
         }
+
         return advertisementMapper.toResponse(savedAdvertisement);
     }
 

@@ -126,12 +126,10 @@ public class ChatServiceImpl implements ChatService {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        boolean isAdmin = currentUser.getRoles().stream()
-                .anyMatch(role -> RoleEnum.ADMIN.name().equals(role.getName()));
         boolean isCourseOwner = course.getAuthor() != null
                 && Objects.equals(course.getAuthor().getId(), currentUser.getId());
 
-        if (!isAdmin && !isCourseOwner) {
+        if (!currentUser.isAdmin() && !isCourseOwner) {
             throw new AppException(ErrorCode.NOT_COURSE_OWNER);
         }
         if (Objects.equals(currentUser.getId(), student.getId())) {

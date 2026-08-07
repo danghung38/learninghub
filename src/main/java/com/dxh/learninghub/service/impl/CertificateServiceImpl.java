@@ -11,7 +11,7 @@ import com.dxh.learninghub.exception.ErrorCode;
 import com.dxh.learninghub.repo.CertificateRepository;
 import com.dxh.learninghub.repo.CourseRepository;
 import com.dxh.learninghub.mapper.CertificateMapper;
-import com.dxh.learninghub.service.CertificatePdfGenerator;
+import com.dxh.learninghub.utils.CertificatePdfGenerator;
 import com.dxh.learninghub.service.interfac.CertificateService;
 import com.dxh.learninghub.service.interfac.LearningProgressService;
 import com.dxh.learninghub.utils.CurrentUserProvider;

@@ -23,9 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.time.YearMonth;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -40,28 +39,21 @@ public class AdminRevenueServiceImpl implements AdminRevenueService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public AdminRevenueOverviewResponse getOverview() {
-        BigDecimal completedDepositAmount = safeAmount(
-                paymentRepository.sumAmountByStatusForAdmin(PaymentStatus.COMPLETED));
-        BigDecimal paidWithdrawalAmount = safeAmount(
-                withdrawalRepository.sumAmountByStatusForAdmin(WithdrawalStatus.PAID));
+        var completedDepositAmount = safeAmount(paymentRepository.sumAmountByStatusForAdmin(PaymentStatus.COMPLETED));
+        var paidWithdrawalAmount = safeAmount(withdrawalRepository.sumAmountByStatusForAdmin(WithdrawalStatus.PAID));
 
         return AdminRevenueOverviewResponse.builder()
                 .totalCourseSalesPoints(safeLong(enrollmentRepository.sumSpentPointsForAdmin()))
                 .totalEnrollments(safeLong(enrollmentRepository.countAllEnrollments()))
                 .completedDepositCount(safeLong(paymentRepository.countByStatusForAdmin(PaymentStatus.COMPLETED)))
                 .completedDepositAmount(completedDepositAmount)
-                .completedDepositPoints(safeLong(
-                        paymentRepository.sumPointsByStatusForAdmin(PaymentStatus.COMPLETED)))
+                .completedDepositPoints(safeLong(paymentRepository.sumPointsByStatusForAdmin(PaymentStatus.COMPLETED)))
                 .paidWithdrawalCount(safeLong(withdrawalRepository.countByStatusForAdmin(WithdrawalStatus.PAID)))
                 .paidWithdrawalAmount(paidWithdrawalAmount)
-                .paidWithdrawalPoints(safeLong(
-                        withdrawalRepository.sumPointsByStatusForAdmin(WithdrawalStatus.PAID)))
-                .pendingWithdrawalCount(safeLong(
-                        withdrawalRepository.countByStatusForAdmin(WithdrawalStatus.PENDING)))
-                .pendingWithdrawalAmount(safeAmount(
-                        withdrawalRepository.sumAmountByStatusForAdmin(WithdrawalStatus.PENDING)))
-                .pendingWithdrawalPoints(safeLong(
-                        withdrawalRepository.sumPointsByStatusForAdmin(WithdrawalStatus.PENDING)))
+                .paidWithdrawalPoints(safeLong(withdrawalRepository.sumPointsByStatusForAdmin(WithdrawalStatus.PAID)))
+                .pendingWithdrawalCount(safeLong(withdrawalRepository.countByStatusForAdmin(WithdrawalStatus.PENDING)))
+                .pendingWithdrawalAmount(safeAmount(withdrawalRepository.sumAmountByStatusForAdmin(WithdrawalStatus.PENDING)))
+                .pendingWithdrawalPoints(safeLong(withdrawalRepository.sumPointsByStatusForAdmin(WithdrawalStatus.PENDING)))
                 .netCashFlow(completedDepositAmount.subtract(paidWithdrawalAmount))
                 .build();
     }
@@ -71,26 +63,16 @@ public class AdminRevenueServiceImpl implements AdminRevenueService {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public AdminRevenueReportResponse getReport(RevenueAnalyticsRequest request) {
         validateRequest(request);
-        List<AdminRevenueDetailResponse> details = request.month() == null
+
+        List<AdminRevenueDetailResponse> details = (request.month() == null)
                 ? buildMonthlyDetails(request.year())
                 : buildWeeklyDetails(request.year(), request.month());
 
-        long totalCourseSalesPoints = details.stream()
-                .mapToLong(item -> safeLong(item.courseSalesPoints()))
-                .sum();
-        long totalEnrollments = details.stream()
-                .mapToLong(item -> safeLong(item.enrollments()))
-                .sum();
-        long totalDepositPoints = details.stream()
-                .mapToLong(item -> safeLong(item.depositPoints()))
-                .sum();
         BigDecimal totalDepositAmount = details.stream()
                 .map(AdminRevenueDetailResponse::depositAmount)
                 .map(AdminRevenueServiceImpl::safeAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        long totalWithdrawalPoints = details.stream()
-                .mapToLong(item -> safeLong(item.withdrawalPoints()))
-                .sum();
+
         BigDecimal totalWithdrawalAmount = details.stream()
                 .map(AdminRevenueDetailResponse::withdrawalAmount)
                 .map(AdminRevenueServiceImpl::safeAmount)
@@ -99,164 +81,121 @@ public class AdminRevenueServiceImpl implements AdminRevenueService {
         return AdminRevenueReportResponse.builder()
                 .year(request.year())
                 .month(request.month())
-                .totalCourseSalesPoints(totalCourseSalesPoints)
-                .totalEnrollments(totalEnrollments)
-                .totalDepositPoints(totalDepositPoints)
+                .totalCourseSalesPoints(details.stream().mapToLong(i -> safeLong(i.courseSalesPoints())).sum())
+                .totalEnrollments(details.stream().mapToLong(i -> safeLong(i.enrollments())).sum())
+                .totalDepositPoints(details.stream().mapToLong(i -> safeLong(i.depositPoints())).sum())
                 .totalDepositAmount(totalDepositAmount)
-                .totalWithdrawalPoints(totalWithdrawalPoints)
+                .totalWithdrawalPoints(details.stream().mapToLong(i -> safeLong(i.withdrawalPoints())).sum())
                 .totalWithdrawalAmount(totalWithdrawalAmount)
                 .netCashFlow(totalDepositAmount.subtract(totalWithdrawalAmount))
                 .details(details)
                 .build();
     }
 
+    // --- XỬ LÝ THEO THÁNG
     private List<AdminRevenueDetailResponse> buildMonthlyDetails(Integer year) {
-        Map<Integer, RevenueBucket> buckets = new HashMap<>();
-        mergeEnrollments(buckets, enrollmentRepository.sumSpentPointsGroupByMonthForAdmin(year));
-        mergeDeposits(buckets, paymentRepository.sumCompletedPaymentsGroupByMonthForAdmin(year));
-        mergeWithdrawals(buckets, withdrawalRepository.sumPaidWithdrawalsGroupByMonthForAdmin(year));
+        RevenueBucket[] buckets = new RevenueBucket[12];
+        for (int i = 0; i < 12; i++) buckets[i] = new RevenueBucket();
 
-        return java.util.stream.IntStream.rangeClosed(1, 12)
-                .mapToObj(month -> toDetail(
-                        buckets.getOrDefault(month, new RevenueBucket()),
-                        AppConstant.MONTH_NAMES[month - 1],
-                        null,
-                        year))
-                .toList();
+        // 1. Nhồi dữ liệu Enrollment vào mảng theo tháng (index = tháng - 1)
+        for (Object[] row : enrollmentRepository.sumSpentPointsGroupByMonthForAdmin(year)) {
+            int month = (int) number(row[0]);
+            if (month >= 1 && month <= 12) {
+                buckets[month - 1].courseSalesPoints += number(row[1]);
+                buckets[month - 1].enrollments += number(row[2]);
+            }
+        }
+
+        // 2. Nhồi dữ liệu Deposit
+        for (Object[] row : paymentRepository.sumCompletedPaymentsGroupByMonthForAdmin(year)) {
+            int month = (int) number(row[0]);
+            if (month >= 1 && month <= 12) {
+                buckets[month - 1].depositAmount = buckets[month - 1].depositAmount.add(amount(row[1]));
+                buckets[month - 1].depositPoints += number(row[2]);
+            }
+        }
+
+        // 3. Nhồi dữ liệu Withdrawal
+        for (Object[] row : withdrawalRepository.sumPaidWithdrawalsGroupByMonthForAdmin(year)) {
+            int month = (int) number(row[0]);
+            if (month >= 1 && month <= 12) {
+                buckets[month - 1].withdrawalAmount = buckets[month - 1].withdrawalAmount.add(amount(row[1]));
+                buckets[month - 1].withdrawalPoints += number(row[2]);
+            }
+        }
+
+        // Chuyển mảng thành List Response
+        List<AdminRevenueDetailResponse> result = new ArrayList<>();
+        for (int i = 0; i < 12; i++) {
+            result.add(toDetail(buckets[i], AppConstant.MONTH_NAMES[i], null, year));
+        }
+        return result;
     }
 
+    // --- XỬ LÝ THEO TUẦN
     private List<AdminRevenueDetailResponse> buildWeeklyDetails(Integer year, Integer month) {
-        Map<Integer, RevenueBucket> buckets = new HashMap<>();
-        mergeEnrollmentsByWeek(
-                buckets,
-                enrollmentRepository.sumSpentPointsGroupByDayOfMonthForAdmin(year, month));
-        mergeDepositsByWeek(
-                buckets,
-                paymentRepository.sumCompletedPaymentsGroupByDayOfMonthForAdmin(year, month));
-        mergeWithdrawalsByWeek(
-                buckets,
-                withdrawalRepository.sumPaidWithdrawalsGroupByDayOfMonthForAdmin(year, month));
-
         int totalWeeks = (YearMonth.of(year, month).lengthOfMonth() - 1) / 7 + 1;
-        return java.util.stream.IntStream.range(0, totalWeeks)
-                .mapToObj(week -> toDetail(
-                        buckets.getOrDefault(week, new RevenueBucket()),
-                        "Week " + (week + 1),
-                        AppConstant.MONTH_NAMES[month - 1],
-                        year))
-                .toList();
-    }
+        RevenueBucket[] buckets = new RevenueBucket[totalWeeks];
+        for (int i = 0; i < totalWeeks; i++) buckets[i] = new RevenueBucket();
 
-    private void mergeEnrollments(Map<Integer, RevenueBucket> buckets, List<Object[]> rows) {
-        for (Object[] row : rows) {
-            RevenueBucket bucket = bucketFor(buckets, row[0]);
-            bucket.courseSalesPoints += number(row[1]);
-            bucket.enrollments += number(row[2]);
+        // 1. Enrollment theo tuần
+        for (Object[] row : enrollmentRepository.sumSpentPointsGroupByDayOfMonthForAdmin(year, month)) {
+            int week = (int) ((number(row[0]) - 1) / 7);
+            if (week >= 0 && week < totalWeeks) {
+                buckets[week].courseSalesPoints += number(row[1]);
+                buckets[week].enrollments += number(row[2]);
+            }
         }
-    }
 
-    private void mergeDeposits(Map<Integer, RevenueBucket> buckets, List<Object[]> rows) {
-        for (Object[] row : rows) {
-            RevenueBucket bucket = bucketFor(buckets, row[0]);
-            bucket.depositAmount = bucket.depositAmount.add(amount(row[1]));
-            bucket.depositPoints += number(row[2]);
+        // 2. Deposit theo tuần
+        for (Object[] row : paymentRepository.sumCompletedPaymentsGroupByDayOfMonthForAdmin(year, month)) {
+            int week = (int) ((number(row[0]) - 1) / 7);
+            if (week >= 0 && week < totalWeeks) {
+                buckets[week].depositAmount = buckets[week].depositAmount.add(amount(row[1]));
+                buckets[week].depositPoints += number(row[2]);
+            }
         }
-    }
 
-    private void mergeWithdrawals(Map<Integer, RevenueBucket> buckets, List<Object[]> rows) {
-        for (Object[] row : rows) {
-            RevenueBucket bucket = bucketFor(buckets, row[0]);
-            bucket.withdrawalAmount = bucket.withdrawalAmount.add(amount(row[1]));
-            bucket.withdrawalPoints += number(row[2]);
+        // 3. Withdrawal theo tuần
+        for (Object[] row : withdrawalRepository.sumPaidWithdrawalsGroupByDayOfMonthForAdmin(year, month)) {
+            int week = (int) ((number(row[0]) - 1) / 7);
+            if (week >= 0 && week < totalWeeks) {
+                buckets[week].withdrawalAmount = buckets[week].withdrawalAmount.add(amount(row[1]));
+                buckets[week].withdrawalPoints += number(row[2]);
+            }
         }
-    }
 
-    private void mergeEnrollmentsByWeek(Map<Integer, RevenueBucket> buckets, List<Object[]> rows) {
-        for (Object[] row : rows) {
-            RevenueBucket bucket = bucketFor(buckets, weekIndex(row[0]));
-            bucket.courseSalesPoints += number(row[1]);
-            bucket.enrollments += number(row[2]);
+        // Chuyển mảng thành List Response
+        List<AdminRevenueDetailResponse> result = new ArrayList<>();
+        for (int i = 0; i < totalWeeks; i++) {
+            result.add(toDetail(buckets[i], "Week " + (i + 1), AppConstant.MONTH_NAMES[month - 1], year));
         }
+        return result;
     }
 
-    private void mergeDepositsByWeek(Map<Integer, RevenueBucket> buckets, List<Object[]> rows) {
-        for (Object[] row : rows) {
-            RevenueBucket bucket = bucketFor(buckets, weekIndex(row[0]));
-            bucket.depositAmount = bucket.depositAmount.add(amount(row[1]));
-            bucket.depositPoints += number(row[2]);
-        }
-    }
-
-    private void mergeWithdrawalsByWeek(Map<Integer, RevenueBucket> buckets, List<Object[]> rows) {
-        for (Object[] row : rows) {
-            RevenueBucket bucket = bucketFor(buckets, weekIndex(row[0]));
-            bucket.withdrawalAmount = bucket.withdrawalAmount.add(amount(row[1]));
-            bucket.withdrawalPoints += number(row[2]);
-        }
-    }
-
-    private static RevenueBucket bucketFor(Map<Integer, RevenueBucket> buckets, Object key) {
-        return buckets.computeIfAbsent((int) number(key), ignored -> new RevenueBucket());
-    }
-
-    private static int weekIndex(Object day) {
-        return (int) ((number(day) - 1) / 7);
-    }
-
-    private static AdminRevenueDetailResponse toDetail(
-            RevenueBucket bucket,
-            String period,
-            String month,
-            Integer year) {
+    private static AdminRevenueDetailResponse toDetail(RevenueBucket b, String period, String month, Integer year) {
         return AdminRevenueDetailResponse.builder()
-                .period(period)
-                .month(month)
-                .year(year)
-                .courseSalesPoints(bucket.courseSalesPoints)
-                .enrollments(bucket.enrollments)
-                .depositAmount(bucket.depositAmount)
-                .depositPoints(bucket.depositPoints)
-                .withdrawalAmount(bucket.withdrawalAmount)
-                .withdrawalPoints(bucket.withdrawalPoints)
+                .period(period).month(month).year(year)
+                .courseSalesPoints(b.courseSalesPoints).enrollments(b.enrollments)
+                .depositAmount(b.depositAmount).depositPoints(b.depositPoints)
+                .withdrawalAmount(b.withdrawalAmount).withdrawalPoints(b.withdrawalPoints)
                 .build();
     }
 
     private void validateRequest(RevenueAnalyticsRequest request) {
-        if (request == null || request.year() == null) {
-            throw new AppException(ErrorCode.INVALID_REVENUE_REQUEST);
-        }
-
-        int currentYear = Year.now().getValue();
-        if (request.year() < 2020 || request.year() > currentYear) {
-            throw new AppException(ErrorCode.INVALID_REVENUE_REQUEST);
-        }
-        if (request.month() != null && (request.month() < 1 || request.month() > 12)) {
+        if (request == null || request.year() == null || request.year() < 2020 || request.year() > Year.now().getValue()
+                || (request.month() != null && (request.month() < 1 || request.month() > 12))) {
             throw new AppException(ErrorCode.INVALID_REVENUE_REQUEST);
         }
     }
 
-    private static long number(Object value) {
-        return value == null ? 0L : ((Number) value).longValue();
-    }
-
-    private static long safeLong(Long value) {
-        return value == null ? 0L : value;
-    }
-
-    private static BigDecimal amount(Object value) {
-        return value == null ? BigDecimal.ZERO : new BigDecimal(value.toString());
-    }
-
-    private static BigDecimal safeAmount(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
-    }
+    private static long number(Object val) { return val == null ? 0L : ((Number) val).longValue(); }
+    private static long safeLong(Long val) { return val == null ? 0L : val; }
+    private static BigDecimal amount(Object val) { return val == null ? BigDecimal.ZERO : new BigDecimal(val.toString()); }
+    private static BigDecimal safeAmount(BigDecimal val) { return val == null ? BigDecimal.ZERO : val; }
 
     private static final class RevenueBucket {
-        long courseSalesPoints;
-        long enrollments;
-        BigDecimal depositAmount = BigDecimal.ZERO;
-        long depositPoints;
-        BigDecimal withdrawalAmount = BigDecimal.ZERO;
-        long withdrawalPoints;
+        long courseSalesPoints, enrollments, depositPoints, withdrawalPoints;
+        BigDecimal depositAmount = BigDecimal.ZERO, withdrawalAmount = BigDecimal.ZERO;
     }
 }
