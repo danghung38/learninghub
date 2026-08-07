@@ -4,7 +4,7 @@ server:
     context-path: /api/v1
 
 app:
-  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  frontend-url: ${FRONTEND_URL}
 
 spring:
   profiles:
@@ -25,8 +25,7 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
-      database: ${REDIS_DATABASE}
+      database: 0
       connect-timeout: 2s
       timeout: 2000ms
   cache:
@@ -62,33 +61,33 @@ aws:
 
 jobs:
   payment-expiration:
-    enabled: ${PAYMENT_EXPIRATION_ENABLED}
+    enabled: true
     initial-delay-ms: 60000
     fixed-delay-ms: 60000
 
   notification-cleanup:
-    enabled: ${NOTIFICATION_CLEANUP_ENABLED}
+    enabled: true
     cron: "0 0 3 * * *"
     zone: Asia/Ho_Chi_Minh
     retention-days: 60
 
   advertisement-deactivation:
-    enabled: ${ADVERTISEMENT_DEACTIVATION_ENABLED}
+    enabled: true
     cron: "0 0 0 * * *"
     zone: Asia/Ho_Chi_Minh
 
   s3-orphan-cleanup:
-    enabled: ${S3_ORPHAN_CLEANUP_ENABLED}
+    enabled: true
     cron: "0 0 3 * * SUN"
     zone: Asia/Ho_Chi_Minh
-    grace-hours: 24
-    dry-run: ${S3_ORPHAN_DRY_RUN}
+    grace-hours: 24 #remove over 24h
+    dry-run: false #true = run test
 
   deleted-course-content-cleanup:
-    enabled: ${DELETED_COURSE_CONTENT_CLEANUP_ENABLED}
+    enabled: true
 
 withdrawal:
-  amount-per-point: ${WITHDRAWAL_AMOUNT_PER_POINT}
+  amount-per-point: 800
 
 payment:
   vnpay:
