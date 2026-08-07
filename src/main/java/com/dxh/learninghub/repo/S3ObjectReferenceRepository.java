@@ -80,12 +80,6 @@ public class S3ObjectReferenceRepository {
 
                 UNION ALL
 
-                SELECT avatar_url
-                FROM notifications
-                WHERE avatar_url IS NOT NULL
-
-                UNION ALL
-
                 SELECT payment_proof_url
                 FROM withdrawals
                 WHERE payment_proof_url IS NOT NULL
