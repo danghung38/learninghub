@@ -63,6 +63,26 @@ public class CourseController {
                 .build();
     }
 
+    @Operation(summary = "Get approved courses by teacher", description = "Return a paginated list of approved courses published by a teacher")
+    @GetMapping("/teacher/{teacherId}")
+    public ApiResponse<PageResponse<CourseResponse>> getCoursesByTeacher(
+            @PathVariable Long teacherId,
+            @RequestParam(defaultValue = "1") Integer pageNo,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String sortBy) {
+
+        Pageable pageable = PageUtil.createPageable(
+                pageNo, pageSize, sortBy,
+                "id", "title", "points", "duration",
+                "totalEnrollments", "createdAt", "updatedAt");
+
+        return ApiResponse.<PageResponse<CourseResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Successfully get teacher course list")
+                .result(courseService.getCoursesByTeacher(teacherId, pageable))
+                .build();
+    }
+
 
     @Operation(summary = "Get title suggestions", description = "Return approved course title suggestions for a query")
     @GetMapping("/title")

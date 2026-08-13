@@ -33,6 +33,8 @@ public class SecurityConfig {
     static final String[] PUBLIC_GET_ENDPOINTS = {
             "/advertisements",
             "/courses/list",
+            "/courses/teacher/**",
+            "/teachers/public/**",
             "/courses/title",
             "/courses/{courseId}/preview",
             "/courses/{courseId}",

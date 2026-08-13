@@ -5,6 +5,7 @@ import com.dxh.learninghub.dto.request.TeacherUpdateRequest;
 import com.dxh.learninghub.dto.response.TeacherResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.TeacherCourseStudentResponse;
+import com.dxh.learninghub.dto.response.TeacherCoursePreview;
 import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.Enrollment;
 import com.dxh.learninghub.entity.User;
@@ -51,6 +52,21 @@ public class TeacherServiceImpl implements TeacherService {
     CourseRepository courseRepository;
     EnrollmentRepository enrollmentRepository;
     NotificationService notificationService;
+
+    @Override
+    @Transactional(readOnly = true)
+    public TeacherCoursePreview getPublicTeacher(Long teacherId) {
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new AppException(com.dxh.learninghub.exception.ErrorCode.USER_NOT_EXISTED));
+
+        boolean isTeacher = teacher.getRoles().stream()
+                .anyMatch(role -> RoleEnum.TEACHER.name().equals(role.getName()));
+        if (!isTeacher) {
+            throw new AppException(com.dxh.learninghub.exception.ErrorCode.USER_NOT_TEACHER);
+        }
+
+        return userMapper.userToTeacherCoursePreview(teacher);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -241,24 +257,7 @@ public class TeacherServiceImpl implements TeacherService {
                 .items(students.stream().map(this::toStudentResponse).toList())
                 .build();
     }
-
-    private String processFileUpload(MultipartFile file, String folder, String oldFileUrl, UploadPolicy policy) {
-        if (file == null || file.isEmpty()) return oldFileUrl;
-
-        FileUploadUtil.validate(file, policy);
-
-        String newFileUrl = awsS3Service.uploadFile(file, folder, policy);
-
-        if (oldFileUrl != null && !oldFileUrl.isBlank()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    awsS3Service.deleteFileFromS3(oldFileUrl);
-                }
-            });
-        }
-        return newFileUrl;
-    }
+    
 
     private TeacherCourseStudentResponse toStudentResponse(Enrollment enrollment) {
         return TeacherCourseStudentResponse.builder()

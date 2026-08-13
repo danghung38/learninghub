@@ -4,6 +4,7 @@ import com.dxh.learninghub.dto.request.UserCreationRequest;
 import com.dxh.learninghub.dto.request.UserUpdateRequest;
 import com.dxh.learninghub.dto.request.TeacherUpdateRequest;
 import com.dxh.learninghub.dto.response.TeacherResponse;
+import com.dxh.learninghub.dto.response.TeacherCoursePreview;
 import com.dxh.learninghub.dto.response.UserResponse;
 import com.dxh.learninghub.dto.response.UserUpdateResponse;
 import com.dxh.learninghub.dto.response.admin.TeacherApplicationDetailResponse;
@@ -13,6 +14,9 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", uses = {RoleMapper.class, AwsS3Service.class})
 public interface UserMapper {
+    @Mapping(source = "avatar", target = "avatar", qualifiedByName = "resolveFileUrl")
+    TeacherCoursePreview userToTeacherCoursePreview(User user);
+
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "password", ignore = true)
     User toUser(UserCreationRequest request);

@@ -23,6 +23,9 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
     List<Course> findByAuthorAndStatusNot(User author, CourseStatus status);
 
     @EntityGraph(attributePaths = "author")
+    Page<Course> findByAuthorIdAndStatus(Long authorId, CourseStatus status, Pageable pageable);
+
+    @EntityGraph(attributePaths = "author")
     Optional<Course> findWithAuthorById(Long id);
 
     @Query("""

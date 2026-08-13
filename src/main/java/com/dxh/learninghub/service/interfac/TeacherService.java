@@ -6,10 +6,13 @@ import com.dxh.learninghub.dto.response.TeacherDashboardResponse;
 import com.dxh.learninghub.dto.response.TeacherResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.TeacherCourseStudentResponse;
+import com.dxh.learninghub.dto.response.TeacherCoursePreview;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface TeacherService {
+    TeacherCoursePreview getPublicTeacher(Long teacherId);
+
     TeacherResponse registerTeacher(TeacherRegisterRequest request, MultipartFile cv, MultipartFile certificate);
     TeacherResponse reRegisterTeacher(TeacherRegisterRequest request, MultipartFile cv, MultipartFile certificate);
     TeacherResponse updateTeacherProfile(TeacherUpdateRequest request, MultipartFile cv, MultipartFile certificate);

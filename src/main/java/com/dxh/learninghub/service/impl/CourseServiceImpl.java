@@ -255,6 +255,31 @@ public class CourseServiceImpl implements CourseService {
                 .build();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<CourseResponse> getCoursesByTeacher(Long teacherId, Pageable pageable) {
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        boolean isTeacher = teacher.getRoles().stream()
+                .anyMatch(role -> RoleEnum.TEACHER.name().equals(role.getName()));
+        if (!isTeacher) {
+            throw new AppException(ErrorCode.USER_NOT_TEACHER);
+        }
+
+        Page<Course> courses = courseRepository.findByAuthorIdAndStatus(
+                teacherId,
+                CourseStatus.APPROVED,
+                pageable);
+
+        return PageResponse.<CourseResponse>builder()
+                .pageNo(pageable.getPageNumber() + 1)
+                .pageSize(pageable.getPageSize())
+                .totalPage(courses.getTotalPages())
+                .totalElements(courses.getTotalElements())
+                .items(courses.stream().map(courseMapper::courseToCourseResponse).toList())
+                .build();
+    }
+
     private Course getManagedCourse(Long courseId) {
         Course course = courseRepository.findWithAuthorById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
