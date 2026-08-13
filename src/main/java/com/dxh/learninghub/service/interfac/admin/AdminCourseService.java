@@ -13,9 +13,9 @@ public interface AdminCourseService {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter);
 
-    void ban(Long id);
+    void ban(Long id, String reason);
 
     void unban(Long id);
 
-    CourseResponse reject(Long id);
+    CourseResponse reject(Long id, String reason);
 }

@@ -4,6 +4,7 @@ import com.dxh.learninghub.dto.request.TeacherRegisterRequest;
 import com.dxh.learninghub.dto.request.TeacherUpdateRequest;
 import com.dxh.learninghub.dto.response.ApiResponse;
 import com.dxh.learninghub.dto.response.TeacherResponse;
+import com.dxh.learninghub.dto.response.TeacherCoursePreview;
 import com.dxh.learninghub.service.interfac.TeacherService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +25,19 @@ import org.springframework.web.multipart.MultipartFile;
 public class TeacherController {
 
     TeacherService teacherService;
+
+    @Operation(
+            summary = "Get public teacher profile",
+            description = "Return the public profile fields shown on course pages"
+    )
+    @GetMapping("/public/{teacherId}")
+    public ApiResponse<TeacherCoursePreview> getPublicTeacher(@PathVariable Long teacherId) {
+        return ApiResponse.<TeacherCoursePreview>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get teacher profile successfully")
+                .result(teacherService.getPublicTeacher(teacherId))
+                .build();
+    }
 
     @Operation(
             summary = "Register as a teacher",

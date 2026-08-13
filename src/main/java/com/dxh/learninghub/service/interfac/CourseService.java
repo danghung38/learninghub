@@ -30,4 +30,6 @@ public interface CourseService {
     void softDeleteCourse(Long courseId);
 
     PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter);
+
+    PageResponse<CourseResponse> getCoursesByTeacher(Long teacherId, Pageable pageable);
 }

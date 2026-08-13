@@ -79,7 +79,7 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
     @Override
     @Transactional
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public void rejectTeacherRegistration(Long userId) {
+    public void rejectTeacherRegistration(Long userId, String reason) {
         User user = findUserById(userId);
 
         if (user.getRegistrationStatus() != RegistrationStatus.PENDING) {
@@ -88,11 +88,16 @@ public class AdminTeacherServiceImpl implements AdminTeacherService {
 
         user.setRegistrationStatus(RegistrationStatus.REJECTED);
 
+        // Xử lý lý do từ chối đơn
+        String rejectionReason = (reason != null && !reason.trim().isEmpty())
+                ? reason
+                : "No specific reason provided.";
+
         notificationService.createNotification(
                 user,
                 currentUser.getCurrentUser(),
                 "Teacher application rejected",
-                "Your teacher application has been rejected",
+                "Your teacher application has been rejected. Reason: " + rejectionReason,
                 "/dashboard/teacher-application");
     }
 

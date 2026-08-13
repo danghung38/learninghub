@@ -15,7 +15,10 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH")
-                        .allowedOriginPatterns("*")  // Thay vì allowedOrigins("*")
+                        .allowedOriginPatterns(
+                                "https://learninghub.id.vn",
+                                "http://localhost:5173"
+                        )  // Chỉ định rõ các domain được phép
                         .allowCredentials(true)      // Nếu FE gửi cookie
                         .allowedHeaders("*");        // Cho phép tất cả headers
             }

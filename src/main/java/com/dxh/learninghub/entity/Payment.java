@@ -50,10 +50,10 @@ public class Payment extends AbstractEntity<Long> {
     @Column(nullable = false)
     Long pointsReceived;
 
-    @Column(name = "response_code", length = 2)
+    @Column(name = "response_code", length = 10)
     String responseCode;
 
-    @Column(name = "bank_code", length = 20)
+    @Column(name = "bank_code", length = 100)
     String bankCode;
 
     @Column(name = "expires_at", nullable = false)

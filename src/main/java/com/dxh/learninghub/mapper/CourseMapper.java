@@ -7,6 +7,7 @@ import com.dxh.learninghub.dto.response.*;
 import com.dxh.learninghub.entity.Chapter;
 import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.Lesson;
+import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.service.AwsS3Service;
 import org.mapstruct.*;
 
@@ -36,11 +37,19 @@ public interface CourseMapper {
             CourseUpdateRequest request,
             @MappingTarget Course course);
 
-    @Mapping(source = "author.id", target = "authorId")
-    @Mapping(source = "author.fullName", target = "authorName")
+    @Mapping(source = "author", target = "teacher")
     @Mapping(source = "thumbnail", target = "thumbnail", qualifiedByName = "resolveFileUrl")
     @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveFileUrl")
     CoursePreviewResponse courseToCoursePreviewResponse(Course course);
+
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "fullName", target = "fullName")
+    @Mapping(source = "avatar", target = "avatar", qualifiedByName = "resolveFileUrl")
+    @Mapping(source = "expertise", target = "expertise")
+    @Mapping(source = "yearsOfExperience", target = "yearsOfExperience")
+    @Mapping(source = "bio", target = "bio")
+    @Mapping(source = "facebookLink", target = "facebookLink")
+    TeacherCoursePreview userToTeacherCoursePreview(User user);
 
     ChapterPreviewResponse chapterToChapterPreviewResponse(Chapter chapter);
 

@@ -10,9 +10,7 @@ import java.util.List;
 public record CoursePreviewResponse(
     Long id,
 
-    Long authorId,
-
-    String authorName,
+    TeacherCoursePreview teacher,
 
     String title,
 
