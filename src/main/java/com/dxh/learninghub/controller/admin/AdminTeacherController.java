@@ -1,5 +1,6 @@
 package com.dxh.learninghub.controller.admin;
 
+import com.dxh.learninghub.dto.request.RejectRequest;
 import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.ApiResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
@@ -96,8 +97,9 @@ public class AdminTeacherController {
 
     @Operation(summary = "Reject teacher application", description = "Reject a pending teacher application")
     @PostMapping("/{userId}/reject")
-    public ApiResponse<?> rejectTeacherRegistration(@PathVariable Long userId) {
-        adminTeacherService.rejectTeacherRegistration(userId);
+    public ApiResponse<?> rejectTeacherRegistration(@PathVariable Long userId,
+                                                    @RequestBody RejectRequest request) {
+        adminTeacherService.rejectTeacherRegistration(userId, request.reason());
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Teacher registration rejected successfully")

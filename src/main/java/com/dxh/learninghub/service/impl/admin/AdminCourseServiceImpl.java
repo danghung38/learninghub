@@ -68,10 +68,19 @@ public class AdminCourseServiceImpl implements AdminCourseService {
             @CacheEvict(cacheNames = CacheNames.COURSE_TITLE, allEntries = true)
     })
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public void ban(Long id) {
+    public void ban(Long id, String reason) {
         Course course = findCourse(id);
         course.setStatus(CourseStatus.BANNED);
-        notifyCourseAuthor(course, "Course banned", "Your course \"" + course.getTitle() + "\" has been banned");
+        // lý do ban
+        String banMessage = (reason != null && !reason.trim().isEmpty())
+                ? reason
+                : "Violation of platform policies.";
+
+        notifyCourseAuthor(
+                course,
+                "Course banned",
+                "Your course \"" + course.getTitle() + "\" has been banned. Reason: " + banMessage
+        );
     }
 
     @Transactional
@@ -98,11 +107,20 @@ public class AdminCourseServiceImpl implements AdminCourseService {
             @CacheEvict(cacheNames = CacheNames.COURSE_TITLE, allEntries = true)
     })
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public CourseResponse reject(Long id) {
+    public CourseResponse reject(Long id, String reason) {
         Course course = findCourse(id);
         validatePending(course);
         course.setStatus(CourseStatus.REJECTED);
-        notifyCourseAuthor(course, "Course rejected", "Your course \"" + course.getTitle() + "\" has been rejected");
+
+        String rejectionMessage = (reason != null && !reason.trim().isEmpty())
+                ? reason
+                : "No specific reason provided.";
+
+        notifyCourseAuthor(
+                course,
+                "Course rejected",
+                "Your course \"" + course.getTitle() + "\" has been rejected. Reason: " + rejectionMessage
+        );
         return courseMapper.courseToCourseResponse(course);
     }
 

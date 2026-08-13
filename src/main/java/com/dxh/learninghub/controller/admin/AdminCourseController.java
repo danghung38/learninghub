@@ -1,6 +1,7 @@
 package com.dxh.learninghub.controller.admin;
 
 import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
+import com.dxh.learninghub.dto.request.RejectRequest;
 import com.dxh.learninghub.dto.response.ApiResponse;
 import com.dxh.learninghub.dto.response.CourseResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
@@ -58,11 +59,13 @@ public class AdminCourseController {
                 .build();
     }
 
-    @Operation(summary = "Ban a course", description = "Ban a course and make it unavailable")
+    @Operation(summary = "Ban a course", description = "Ban a course, make it unavailable, and notify the teacher with a reason")
     @PatchMapping("/{id}/ban")
-    public ApiResponse<Void> ban(@PathVariable Long id) {
+    public ApiResponse<Void> ban(
+            @PathVariable Long id,
+            @RequestBody RejectRequest request) {
 
-        adminCourseService.ban(id);
+        adminCourseService.ban(id, request.reason());
 
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
@@ -84,13 +87,16 @@ public class AdminCourseController {
 
     @Operation(
             summary = "Reject a course",
-            description = "Reject a pending course, return its updated state, and notify the teacher")
+            description = "Reject a pending course, return its updated state, and notify the teacher with a reason")
     @PatchMapping("/{id}/reject")
-    public ApiResponse<CourseResponse> reject(@PathVariable Long id) {
+    public ApiResponse<CourseResponse> reject(
+            @PathVariable Long id,
+            @RequestBody RejectRequest request) {
+
         return ApiResponse.<CourseResponse>builder()
                 .code(HttpStatus.OK.value())
                 .message("Reject successfully")
-                .result(adminCourseService.reject(id))
+                .result(adminCourseService.reject(id, request.reason()))
                 .build();
     }
 
