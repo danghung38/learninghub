@@ -49,11 +49,6 @@ public class ApplicationInitConfig {
         return new BCryptPasswordEncoder(10);
     }
 
-    //lấy tt ng tạo
-    @Bean
-    public AuditorAware<String> auditorProvider() {
-        return new AuditorAwareImpl();
-    }
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository,PasswordEncoder passwordEncoder){
