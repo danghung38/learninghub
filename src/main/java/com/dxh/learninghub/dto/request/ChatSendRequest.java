@@ -1,5 +1,8 @@
 package com.dxh.learninghub.dto.request;
 
+import com.dxh.learninghub.enums.CourseLevel;
+import com.dxh.learninghub.enums.MessageType;
+import com.dxh.learninghub.validator.EnumValue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,6 +14,10 @@ public record ChatSendRequest(
     @NotNull(message = "INVALID_NULL")
     @Min(value = 1, message = "MIN_INVALID")
     Long conversationId,
+
+    @NotBlank(message = "INVALID_BLANK")
+    @EnumValue(enumClass = MessageType.class, message = "INVALID_MESSAGE_TYPE")
+    String type,
 
     @NotBlank(message = "INVALID_BLANK")
     @Size(max = 2000, message = "CONTENT_TOO_LONG")

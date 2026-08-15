@@ -164,7 +164,9 @@ public enum ErrorCode {
 
     ADVERTISEMENT_NOT_EXISTED(2700, "Advertisement not existed", HttpStatus.NOT_FOUND),
     INVALID_ADVERTISEMENT_DATE_RANGE(2701, "Start date must not be after end date", HttpStatus.BAD_REQUEST),
-    ADVERTISEMENT_ALREADY_SENT(2702, "Advertisement has already been sent", HttpStatus.CONFLICT);
+    ADVERTISEMENT_ALREADY_SENT(2702, "Advertisement has already been sent", HttpStatus.CONFLICT),
+
+    INVALID_MESSAGE_TYPE(2800, "Invalid message type", HttpStatus.BAD_REQUEST);
 
     private final int code;
     private final String message;

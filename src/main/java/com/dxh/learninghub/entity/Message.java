@@ -1,5 +1,6 @@
 package com.dxh.learninghub.entity;
 
+import com.dxh.learninghub.enums.MessageType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -25,6 +26,10 @@ public class Message extends AbstractEntity<Long> {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sender_id", nullable = false)
     User sender;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false, length = 20)
+    MessageType type;
 
     @Column(name = "content", nullable = false, columnDefinition = "MEDIUMTEXT")
     String content;

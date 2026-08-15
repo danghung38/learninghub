@@ -1,5 +1,6 @@
 package com.dxh.learninghub.dto.response;
 
+import com.dxh.learninghub.enums.MessageType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
@@ -13,6 +14,8 @@ public record MessageResponse(
     Long conversationId,
 
     Long senderId,
+
+    MessageType type,
 
     String senderName,
 

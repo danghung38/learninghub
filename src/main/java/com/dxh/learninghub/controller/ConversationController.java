@@ -1,9 +1,7 @@
 package com.dxh.learninghub.controller;
 
-import com.dxh.learninghub.dto.response.ApiResponse;
-import com.dxh.learninghub.dto.response.ConversationResponse;
-import com.dxh.learninghub.dto.response.MessageResponse;
-import com.dxh.learninghub.dto.response.PageResponse;
+import com.dxh.learninghub.dto.response.*;
+import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.interfac.ChatService;
 import com.dxh.learninghub.utils.PageUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +25,7 @@ import java.util.List;
 public class ConversationController {
 
     ChatService chatService;
+    AwsS3Service awsS3Service;
 
     @Operation(summary = "Get my conversations", description = "Return conversations belonging to the current user")
     @GetMapping
@@ -51,6 +50,19 @@ public class ConversationController {
         return ApiResponse.<PageResponse<MessageResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .result(chatService.getMessages(conversationId, pageable))
+                .build();
+    }
+
+    @Operation(summary = "Get presigned URL for chat image upload", description = "Generate a presigned URL so the client can upload an image directly to S3")
+    @GetMapping("/upload-url")
+    public ApiResponse<PresignedUploadResponse> getChatImageUploadUrl(
+            @RequestParam String fileName,
+            @RequestParam long fileSize) {
+
+        return ApiResponse.<PresignedUploadResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Generate chat upload URL successfully")
+                .result(awsS3Service.generateChatUploadUrl(fileName, fileSize))
                 .build();
     }
 

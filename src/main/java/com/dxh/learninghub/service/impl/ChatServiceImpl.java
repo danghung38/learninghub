@@ -12,6 +12,7 @@ import com.dxh.learninghub.entity.Message;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.ConversationType;
 import com.dxh.learninghub.enums.EnrollmentStatus;
+import com.dxh.learninghub.enums.MessageType;
 import com.dxh.learninghub.enums.RoleEnum;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
@@ -254,6 +255,7 @@ public class ChatServiceImpl implements ChatService {
                 Message.builder()
                         .conversation(conversation)
                         .sender(sender)
+                        .type(MessageType.valueOf(request.type()))
                         .content(request.content().trim())
                         .build()
         );
@@ -317,14 +319,22 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private MessageResponse toMessageResponse(Message m) {
+        String fileUrl = null;
+
+        if (m.getType() == MessageType.IMAGE) {
+            fileUrl = awsS3Service.resolveFileUrl(m.getContent());
+        }
+
         return MessageResponse.builder()
                 .id(m.getId())
                 .conversationId(m.getConversation().getId())
                 .senderId(m.getSender().getId())
                 .senderName(m.getSender().getFullName())
-                .content(m.getContent())
+                .type(m.getType())
+                .content(fileUrl)
                 .createdAt(m.getCreatedAt())
                 .build();
+
     }
 
 
