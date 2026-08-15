@@ -91,6 +91,8 @@ jobs:
 
   deleted-course-content-cleanup:
     enabled: true
+    cron: "0 0 0 * * *"
+    zone: Asia/Ho_Chi_Minh
 
 withdrawal:
   amount-per-point: 800
