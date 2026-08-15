@@ -16,16 +16,32 @@ import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Configuration
 @RequiredArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @EnableJpaAuditing(auditorAwareRef = "auditorProvider")
 @Slf4j
 public class ApplicationInitConfig {
+
+    @Value("${app.admin.username}")
+    String adminUsername;
+
+    @Value("${app.admin.password}")
+    String adminPassword;
+
+    @Value("${app.admin.full-name}")
+    String adminFullName;
+
+    @Value("${app.admin.email}")
+    String adminEmail;
+
+    @Value("${app.admin.phone-number}")
+    String adminPhoneNumber;
 
 
     @Bean
@@ -73,12 +89,12 @@ public class ApplicationInitConfig {
                 roles.add(teacherRole);
 
                 User user = User.builder()
-                        .username("admin")
-                        .fullName("Đặng Xuân Hùng")
-                        .phoneNumber("0911581476")
-                        .email("hunglockedk4@gmail.com")
+                        .username(adminUsername)
+                        .fullName(adminFullName)
+                        .phoneNumber(adminPhoneNumber)
+                        .email(adminEmail)
                         .enabled(true)
-                        .password(passwordEncoder.encode("admin"))
+                        .password(passwordEncoder.encode(adminPassword))
                         .roles(roles)
                         .build();
 
