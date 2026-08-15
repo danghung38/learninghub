@@ -4,6 +4,7 @@ import com.dxh.learninghub.dto.S3ObjectMetadata;
 import com.dxh.learninghub.dto.response.PresignedUploadResponse;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
+import com.dxh.learninghub.utils.CurrentUserProvider;
 import com.dxh.learninghub.utils.storage.FileUploadUtil;
 import com.dxh.learninghub.utils.storage.UploadPolicy;
 import jakarta.annotation.PostConstruct;
@@ -25,7 +26,6 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.io.InputStream;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
@@ -41,6 +41,8 @@ public class AwsS3Service {
     @Value("${aws.s3.secret-key}") private String secretKey;
     @Value("${aws.s3.bucket-name}") private String bucketName;
     @Value("${aws.s3.base-prefix}") private String basePrefix;
+
+    private final CurrentUserProvider user;
 
     private S3Client s3Client;
     private S3Presigner s3Presigner;
@@ -81,6 +83,13 @@ public class AwsS3Service {
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public PresignedUploadResponse generateDocumentUploadUrl(String fileName, long fileSize) {
         return generateUploadUrl("documents", FileUploadUtil.validate(fileName, fileSize, UploadPolicy.DOCUMENT), fileSize);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    public PresignedUploadResponse generateChatUploadUrl(String fileName, long fileSize) {
+        String chatFolder = "imagechat/" + user.getCurrentUser().getId();
+
+        return generateUploadUrl(chatFolder, FileUploadUtil.validate(fileName, fileSize, UploadPolicy.IMAGE), fileSize);
     }
 
     private PresignedUploadResponse generateUploadUrl(String folder, String fileName, long fileSize) {

@@ -12,6 +12,7 @@ import com.dxh.learninghub.entity.Message;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.ConversationType;
 import com.dxh.learninghub.enums.EnrollmentStatus;
+import com.dxh.learninghub.enums.MessageType;
 import com.dxh.learninghub.enums.RoleEnum;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
@@ -250,13 +251,16 @@ public class ChatServiceImpl implements ChatService {
 
         conversation.setUpdatedAt(LocalDateTime.now());
 
-        Message message = messageRepository.save(
-                Message.builder()
-                        .conversation(conversation)
-                        .sender(sender)
-                        .content(request.content().trim())
-                        .build()
-        );
+        Message message = Message.builder()
+                .conversation(conversation)
+                .sender(sender)
+                .type(MessageType.valueOf(request.type()))
+                .content(request.content().trim())
+                .build();
+        message.setCreatedBy(sender.getUsername());
+        message.setUpdateBy(sender.getUsername());
+
+        message = messageRepository.save(message);
 
         MessageResponse messageResponse = toMessageResponse(message);
 
@@ -317,14 +321,22 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private MessageResponse toMessageResponse(Message m) {
+        String fileUrl = m.getContent();
+
+        if (m.getType() == MessageType.IMAGE) {
+            fileUrl = awsS3Service.resolveFileUrl(fileUrl);
+        }
+
         return MessageResponse.builder()
                 .id(m.getId())
                 .conversationId(m.getConversation().getId())
                 .senderId(m.getSender().getId())
                 .senderName(m.getSender().getFullName())
-                .content(m.getContent())
+                .type(m.getType())
+                .content(fileUrl)
                 .createdAt(m.getCreatedAt())
                 .build();
+
     }
 
 
