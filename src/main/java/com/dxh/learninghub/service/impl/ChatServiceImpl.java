@@ -319,10 +319,10 @@ public class ChatServiceImpl implements ChatService {
     }
 
     private MessageResponse toMessageResponse(Message m) {
-        String fileUrl = null;
+        String fileUrl = m.getContent();
 
         if (m.getType() == MessageType.IMAGE) {
-            fileUrl = awsS3Service.resolveFileUrl(m.getContent());
+            fileUrl = awsS3Service.resolveFileUrl(fileUrl);
         }
 
         return MessageResponse.builder()
