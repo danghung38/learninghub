@@ -251,14 +251,16 @@ public class ChatServiceImpl implements ChatService {
 
         conversation.setUpdatedAt(LocalDateTime.now());
 
-        Message message = messageRepository.save(
-                Message.builder()
-                        .conversation(conversation)
-                        .sender(sender)
-                        .type(MessageType.valueOf(request.type()))
-                        .content(request.content().trim())
-                        .build()
-        );
+        Message message = Message.builder()
+                .conversation(conversation)
+                .sender(sender)
+                .type(MessageType.valueOf(request.type()))
+                .content(request.content().trim())
+                .build();
+        message.setCreatedBy(sender.getUsername());
+        message.setUpdateBy(sender.getUsername());
+
+        message = messageRepository.save(message);
 
         MessageResponse messageResponse = toMessageResponse(message);
 
