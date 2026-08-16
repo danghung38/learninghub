@@ -1,7 +1,7 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: validate #sau này để là validate
+      ddl-auto: validate
     show-sql: false
 
 springdoc:

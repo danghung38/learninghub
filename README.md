@@ -13,9 +13,10 @@ Backend REST API cho nền tảng học trực tuyến LearningHub. Hệ thống
 ## Công nghệ
 
 - Java 21, Spring Boot, Maven
-- Spring Web MVC/WebFlux, Validation, AOP, WebSocket/STOMP
+- Spring Web MVC, Validation, AOP, WebSocket/STOMP
 - Spring Security, JWT, OAuth2 Resource Server và Google OAuth2
 - Spring Data JPA, Hibernate, MySQL 8+
+- Flyway database migration
 - Redis, Spring Cache, rate limiting và token blacklist
 - MapStruct, Lombok
 - AWS SDK for Java v2 (S3)
@@ -127,8 +128,9 @@ Redis dùng cho cache, rate limit và blacklist token. Cache liên quan course �
 | File | Mục đích |
 |---|---|
 | `src/main/resources/application.yaml` | Cấu hình dùng chung, đọc biến môi trường; server context path là `/api/v1` |
-| `src/main/resources/application-dev.yml` | Local/dev: `ddl-auto: update`, bật SQL log và Swagger |
+| `src/main/resources/application-dev.yml` | Local/dev: `ddl-auto: validate`, bật SQL log và Swagger |
 | `src/main/resources/application-prod.yml` | Production: `ddl-auto: validate`, tắt SQL log và Swagger |
+| `src/main/resources/db/migration` | Flyway migrations; schema được nâng cấp trước khi Hibernate validate |
 
 Chọn profile bằng `SPRING_PROFILES_ACTIVE`:
 
@@ -159,6 +161,8 @@ SPRING_PROFILES_ACTIVE=dev
 SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/learninghub
 SPRING_DATASOURCE_USERNAME=root
 SPRING_DATASOURCE_PASSWORD=your-password
+SPRING_FLYWAY_ENABLED=true
+SPRING_FLYWAY_BASELINE_ON_MIGRATE=true
 
 # Redis
 REDIS_HOST=localhost
@@ -216,6 +220,8 @@ CREATE DATABASE learninghub
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 ```
+
+Khi ứng dụng khởi động, Flyway tự chạy các file trong `src/main/resources/db/migration` rồi Hibernate dùng `ddl-auto: validate` để kiểm tra mapping. Với database đã tồn tại từ trước, hãy backup trước và để `SPRING_FLYWAY_BASELINE_ON_MIGRATE=true` cho lần chạy đầu để tạo mốc Flyway version `1` mà không sửa dữ liệu hiện có; sau khi kiểm tra bảng `flyway_schema_history`, nên chuyển biến này thành `false` ở production. Database mới sẽ chạy migration `V1__initial_schema.sql`.
 
 Chạy Redis nhanh bằng Docker:
 
@@ -354,7 +360,7 @@ Có thể bổ sung unit test, repository test, security test, concurrency test 
 ## Roadmap
 
 - Bổ sung integration test bằng Testcontainers.
-- Quản lý migration bằng Flyway.
+- Bổ sung các migration Flyway tiếp theo cho mọi thay đổi schema.
 - CI/CD, dependency scanning, metrics và tracing.
 - Centralized logging và event-driven flow cho advertisement/email.
 - Mở rộng kiểm thử VNPAY callback và concurrent course purchase.
