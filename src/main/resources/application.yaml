@@ -59,6 +59,17 @@ management:
       probes:
         enabled: true
 
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: "Learning Hub Backend Service"
+    version: "0.0.1-SNAPSHOT"
+    java:
+      version: "21.0.5"
+
 jwt:
   signerKey: ${JWT_KEY}
   valid-duration: 1

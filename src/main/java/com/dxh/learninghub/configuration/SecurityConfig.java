@@ -44,6 +44,7 @@ public class SecurityConfig {
             "/payments/vnpay/ipn",
             "/payments/vnpay/return",
             "/actuator/health",
+            "/actuator/info",
             "/actuator/health/**"
     };
 
