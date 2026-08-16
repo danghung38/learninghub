@@ -14,6 +14,7 @@ import org.hibernate.annotations.BatchSize;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,6 +32,9 @@ public class User extends AbstractEntity<Long> {
 
     @Column(unique = true, nullable = false)
     String username;
+
+    @Column(name = "last_login")
+    LocalDateTime lastLogin;
 
     @Enumerated(EnumType.STRING)
     Gender gender;

@@ -113,6 +113,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (user.getBanned()) {throw new AppException(ErrorCode.ACCOUNT_BANNED);}
 
         loginAttemptService.loginSucceeded(request.username(), ip);
+
+        //last login
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
         String accessToken = generateToken(user, TokenType.ACCESS);
         String refreshToken = generateToken(user, TokenType.REFRESH);
 
@@ -206,6 +211,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // 3. Kiểm tra tài khoản có bị ban không
         if (!user.getEnabled()) throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
         if (user.getBanned()) throw new AppException(ErrorCode.ACCOUNT_BANNED);
+
+        // last login
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
 
         // 4. Tạo JWT app và trả về
         String accessToken = generateToken(user, TokenType.ACCESS);

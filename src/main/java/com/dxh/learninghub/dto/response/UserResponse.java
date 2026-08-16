@@ -7,6 +7,7 @@ import lombok.Builder;
 
 import java.io.Serializable;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Builder
@@ -52,5 +53,7 @@ public record UserResponse(
 
     LocalDate dob,
 
-    Set<RoleResponse> roles
+    Set<RoleResponse> roles,
+
+    LocalDateTime lastLogin
 ) implements Serializable {}
