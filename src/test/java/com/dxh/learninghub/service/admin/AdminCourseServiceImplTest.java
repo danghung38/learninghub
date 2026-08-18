@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 class AdminCourseServiceImplTest {
 
     @Mock CourseRepository courseRepository;
+    @Mock CourseMapper courseMapper;
     @Mock NotificationService notificationService;
     @Mock CurrentUserProvider currentUser;
 

@@ -5,8 +5,10 @@ import com.dxh.learninghub.entity.Course;
 import com.dxh.learninghub.entity.Enrollment;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.CourseStatus;
+import com.dxh.learninghub.enums.EnrollmentStatus;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
+import com.dxh.learninghub.mapper.EnrollmentMapper;
 import com.dxh.learninghub.repo.CourseProgressRepository;
 import com.dxh.learninghub.repo.CourseRepository;
 import com.dxh.learninghub.repo.EnrollmentRepository;
@@ -38,6 +40,7 @@ class EnrollmentServiceImplTest {
     @Mock CourseRepository courseRepository;
     @Mock EnrollmentRepository enrollmentRepository;
     @Mock PointTransactionRepository pointTransactionRepository;
+    @Mock EnrollmentMapper enrollmentMapper;
     @Mock CourseProgressRepository courseProgressRepository;
     @Mock NotificationService notificationService;
     @Mock UserRepository userRepository;
