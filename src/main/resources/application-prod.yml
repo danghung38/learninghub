@@ -1,7 +1,7 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: validate #sau này để là validate
+      ddl-auto: validate
     show-sql: false
 
 springdoc:
@@ -9,3 +9,13 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+  endpoint:
+    health:
+      show-details: never

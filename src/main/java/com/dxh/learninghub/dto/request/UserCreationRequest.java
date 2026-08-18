@@ -47,5 +47,9 @@ public record UserCreationRequest(
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy/MM/dd")
     @DobConstraint(min = 18, message = "INVALID_DOB")
-    LocalDate dob
+    LocalDate dob,
+
+    @NotBlank(message = "INVALID_BLANK")
+    @Size(max = 2048, message = "CONTENT_TOO_LONG")
+    String turnstileToken
 ) {}

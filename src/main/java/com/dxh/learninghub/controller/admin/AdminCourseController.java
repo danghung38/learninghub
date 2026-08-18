@@ -86,6 +86,18 @@ public class AdminCourseController {
     }
 
     @Operation(
+            summary = "Restore a deleted course",
+            description = "Restore a soft-deleted course back to draft status before the cron job permanently removes it")
+    @PatchMapping("/{id}/restore")
+    public ApiResponse<CourseResponse> restore(@PathVariable Long id) {
+        return ApiResponse.<CourseResponse>builder()
+                .code(HttpStatus.OK.value())
+                .message("Restore course successfully; returned to draft")
+                .result(adminCourseService.restore(id))
+                .build();
+    }
+
+    @Operation(
             summary = "Reject a course",
             description = "Reject a pending course, return its updated state, and notify the teacher with a reason")
     @PatchMapping("/{id}/reject")

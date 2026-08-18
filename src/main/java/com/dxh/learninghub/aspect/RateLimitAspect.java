@@ -1,7 +1,8 @@
-package com.dxh.learninghub.validator;
+package com.dxh.learninghub.aspect;
 
 
 import com.dxh.learninghub.service.RateLimitService;
+import com.dxh.learninghub.validator.RateLimit;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.annotation.Aspect;

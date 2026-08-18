@@ -18,4 +18,6 @@ public interface AdminCourseService {
     void unban(Long id);
 
     CourseResponse reject(Long id, String reason);
+
+    CourseResponse restore(Long id);
 }

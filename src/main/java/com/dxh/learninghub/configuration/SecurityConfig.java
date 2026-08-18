@@ -42,7 +42,10 @@ public class SecurityConfig {
             "/courses/{courseId}/rating-summary",
             "/certificates/verify/**",
             "/payments/vnpay/ipn",
-            "/payments/vnpay/return"
+            "/payments/vnpay/return",
+            "/actuator/health",
+            "/actuator/info",
+            "/actuator/health/**"
     };
 
     static final String[] API_DOC_ENDPOINTS = {

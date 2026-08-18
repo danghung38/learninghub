@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.impl.admin;
 
+import com.dxh.learninghub.dto.request.AdminResetPasswordRequest;
 import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.UserResponse;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     UserRepository userRepository;
     RoleRepository roleRepository;
     UserMapper userMapper;
+    PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -113,6 +116,16 @@ public class AdminUserServiceImpl implements AdminUserService {
         } catch (IllegalArgumentException exception) {
             throw new AppException(ErrorCode.ROLE_NOT_EXISTED);
         }
+    }
+
+    @Transactional
+    @Override
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public void resetPasswordByAdmin(Long userId, AdminResetPasswordRequest request) {
+        User user = userRepository.findByIdForUpdate(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
     @Override
