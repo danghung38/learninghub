@@ -17,6 +17,7 @@ import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.LoginAttemptService;
 import com.dxh.learninghub.service.TokenBlacklistService;
+import com.dxh.learninghub.service.interfac.TurnstileService;
 import com.dxh.learninghub.service.interfac.AuthenticationService;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -58,6 +59,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     LoginAttemptService loginAttemptService;
     CurrentUserProvider currentUserProvider;
     RedisVerificationTokenRepository redisVrRepository;
+    TurnstileService turnstileService;
 
 
     @NonFinal
@@ -94,6 +96,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     //    login
     @Override
     public AuthenticationResponse login(AuthenticationRequest request, String ip) {
+        turnstileService.verify(request.turnstileToken(), "login");
         loginAttemptService.assertNotBlocked(request.username(), ip);
 
         User user = userRepository

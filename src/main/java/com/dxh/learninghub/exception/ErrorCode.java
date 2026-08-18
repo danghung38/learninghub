@@ -54,6 +54,7 @@ public enum ErrorCode {
     ACCOUNT_BANNED(1105, "Account has been banned", HttpStatus.FORBIDDEN),
     ACCOUNT_NOT_VERIFIED(1106, "Account not verified. Please check your email to verify your account.", HttpStatus.BAD_REQUEST),
     TOO_MANY_REQUESTS(1107, "Too many requests. Please try again later", HttpStatus.TOO_MANY_REQUESTS),
+    TURNSTILE_VERIFICATION_FAILED(1108, "Security verification failed. Please try again", HttpStatus.BAD_REQUEST),
 
     USER_EXISTED(1200, "User existed", HttpStatus.BAD_REQUEST),
     USER_NOT_EXISTED(1201, "User not existed", HttpStatus.NOT_FOUND),

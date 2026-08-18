@@ -20,6 +20,7 @@ import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.CooldownService;
 import com.dxh.learninghub.service.EmailService;
+import com.dxh.learninghub.service.interfac.TurnstileService;
 import com.dxh.learninghub.service.interfac.UserService;
 import com.dxh.learninghub.utils.storage.UploadPolicy;
 import com.dxh.learninghub.utils.CurrentUserProvider;
@@ -56,11 +57,13 @@ public class UserServiceImpl implements UserService {
     AwsS3Service awsS3Service;
     CurrentUserProvider currentUserProvider;
     CooldownService cooldownService;
+    TurnstileService turnstileService;
 
 
     @Transactional(rollbackFor = Exception.class)
     @Override
     public UserResponse createUser(UserCreationRequest request) {
+        turnstileService.verify(request.turnstileToken(), "register");
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
@@ -154,6 +157,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
+        turnstileService.verify(request.turnstileToken(), "forgot-password");
         userRepository.findByEmail(request.email())
                 .filter(User::getEnabled)
                 .ifPresent(user -> {

@@ -83,6 +83,11 @@ jwt:
   valid-duration: 1
   refreshable-duration: 168
 
+turnstile:
+  secret-key: ${TURNSTILE_SECRET_KEY}
+  allowed-hostnames: ${TURNSTILE_ALLOWED_HOSTNAMES}
+  siteverify-url: https://challenges.cloudflare.com/turnstile/v0/siteverify
+
 openapi:
   service:
     api-docs: learninghub-service
