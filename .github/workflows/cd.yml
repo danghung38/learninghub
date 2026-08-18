@@ -1,0 +1,42 @@
+name: LearningHub Continuous Deployment
+
+run-name: ${{ github.actor }} - CD Pipeline
+
+on:
+  workflow_run:
+    workflows:
+      - LearningHub Continuous Integration
+    types:
+      - completed
+    branches:
+      - main
+      - master
+
+jobs:
+  cd-pipeline:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "Start Deploying EC2..."
+            cd /home/ubuntu/learninghub
+            
+            # Cập nhật riêng IMAGE_TAG, giữ nguyên các biến khác trong file .env
+            if grep -q "^IMAGE_TAG=" .env; then
+              sudo sed -i 's|^IMAGE_TAG=.*|IMAGE_TAG=${{ github.event.workflow_run.head_sha }}|' .env
+            else
+              echo "IMAGE_TAG=${{ github.event.workflow_run.head_sha }}" >> .env
+            fi
+            
+            sudo docker compose pull learninghub-service
+            sudo docker compose up -d --force-recreate learninghub-service
+            sudo docker image prune -f
+            echo "Deploy EC2 Successfully!"
