@@ -53,6 +53,10 @@ jwt:
   valid-duration: 1
   refreshable-duration: 24
 
+turnstile:
+  secret-key: test-turnstile-secret
+  allowed-hostnames: localhost
+
 openapi:
   service:
     api-docs: learninghub-test

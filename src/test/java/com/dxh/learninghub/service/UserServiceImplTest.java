@@ -14,6 +14,7 @@ import com.dxh.learninghub.repo.RedisVerificationTokenRepository;
 import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.impl.UserServiceImpl;
+import com.dxh.learninghub.service.interfac.TurnstileService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +40,8 @@ class UserServiceImplTest {
     @Mock UserMapper userMapper;
     @Mock EmailService emailService;
     @Mock RedisVerificationTokenRepository redisVrRepository;
+    @Mock
+    TurnstileService turnstileService;
     @InjectMocks UserServiceImpl service;
 
     @Test
@@ -110,7 +113,8 @@ class UserServiceImplTest {
         return UserCreationRequest.builder()
                 .username("student01").password("secret123").fullName("Student One")
                 .phoneNumber("0912345678").email("student@example.com").address("Ha Noi")
-                .gender("MALE").dob(LocalDate.of(2000, 1, 1)).build();
+                .gender("MALE").dob(LocalDate.of(2000, 1, 1))
+                .turnstileToken("turnstile-token").build();
     }
 
     private static void assertError(org.assertj.core.api.ThrowableAssert.ThrowingCallable call,

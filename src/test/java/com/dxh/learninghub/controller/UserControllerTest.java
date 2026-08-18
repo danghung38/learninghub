@@ -69,6 +69,7 @@ class UserControllerTest {
                 .address("Hà Nội")
                 .gender("MALE")
                 .dob(LocalDate.of(2000, 1, 1))
+                .turnstileToken("turnstile-token")
                 .build();
 
         mockMvc.perform(post("/users")
@@ -100,6 +101,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 ForgotPasswordRequest.builder()
                                         .email("nguyenvana@example.com")
+                                        .turnstileToken("turnstile-token")
                                         .build())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Send otp reset password successful"));
@@ -139,6 +141,7 @@ class UserControllerTest {
                 .address("Hà Nội")
                 .gender("MALE")
                 .dob(LocalDate.of(2000, 1, 1))
+                .turnstileToken("turnstile-token")
                 .build();
     }
 }

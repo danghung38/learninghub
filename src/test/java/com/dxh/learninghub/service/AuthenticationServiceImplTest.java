@@ -8,10 +8,9 @@ import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.RoleEnum;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
-import com.dxh.learninghub.repo.RedisVerificationTokenRepository;
-import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.impl.AuthenticationServiceImpl;
+import com.dxh.learninghub.service.interfac.TurnstileService;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +35,8 @@ class AuthenticationServiceImplTest {
     @Mock PasswordEncoder passwordEncoder;
     @Mock LoginAttemptService loginAttemptService;
     @Mock CurrentUserProvider currentUserProvider;
+    @Mock
+    TurnstileService turnstileService;
     @InjectMocks AuthenticationServiceImpl service;
 
     @BeforeEach
@@ -53,7 +54,8 @@ class AuthenticationServiceImplTest {
         when(passwordEncoder.matches("secret123", "encoded")).thenReturn(true);
 
         AuthenticationResponse response = service.login(
-                AuthenticationRequest.builder().username("student").password("secret123").build(), "127.0.0.1");
+                AuthenticationRequest.builder().username("student").password("secret123")
+                        .turnstileToken("turnstile-token").build(), "127.0.0.1");
 
         assertThat(response.authenticated()).isTrue();
         assertThat(response.accessToken()).isNotBlank();
@@ -71,7 +73,8 @@ class AuthenticationServiceImplTest {
         when(passwordEncoder.matches("wrong", "encoded")).thenReturn(false);
 
         assertError(() -> service.login(
-                AuthenticationRequest.builder().username("student").password("wrong").build(), "127.0.0.1"),
+                AuthenticationRequest.builder().username("student").password("wrong")
+                        .turnstileToken("turnstile-token").build(), "127.0.0.1"),
                 ErrorCode.INVALID_CREDENTIALS);
         verify(loginAttemptService).loginFailed("student", "127.0.0.1");
         verify(userRepository, never()).save(any());
@@ -85,7 +88,8 @@ class AuthenticationServiceImplTest {
         when(passwordEncoder.matches("secret123", "encoded")).thenReturn(true);
 
         assertError(() -> service.login(
-                AuthenticationRequest.builder().username("student").password("secret123").build(), "127.0.0.1"),
+                AuthenticationRequest.builder().username("student").password("secret123")
+                        .turnstileToken("turnstile-token").build(), "127.0.0.1"),
                 ErrorCode.ACCOUNT_BANNED);
         verify(loginAttemptService, never()).loginSucceeded(anyString(), anyString());
     }
