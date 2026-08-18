@@ -129,6 +129,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .map(Role::getName)
                 .collect(Collectors.joining(" "));
 
+        log.info("User {} login successful", request.username());
+
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
