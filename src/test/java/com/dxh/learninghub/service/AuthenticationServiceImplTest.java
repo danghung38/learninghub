@@ -33,12 +33,9 @@ import static org.mockito.Mockito.*;
 class AuthenticationServiceImplTest {
 
     @Mock UserRepository userRepository;
-    @Mock RoleRepository roleRepository;
-    @Mock TokenBlacklistService tokenBlacklistService;
     @Mock PasswordEncoder passwordEncoder;
     @Mock LoginAttemptService loginAttemptService;
     @Mock CurrentUserProvider currentUserProvider;
-    @Mock RedisVerificationTokenRepository redisVrRepository;
     @InjectMocks AuthenticationServiceImpl service;
 
     @BeforeEach

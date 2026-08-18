@@ -14,7 +14,6 @@ import com.dxh.learninghub.repo.RedisVerificationTokenRepository;
 import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.impl.UserServiceImpl;
-import com.dxh.learninghub.utils.CurrentUserProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,9 +39,6 @@ class UserServiceImplTest {
     @Mock UserMapper userMapper;
     @Mock EmailService emailService;
     @Mock RedisVerificationTokenRepository redisVrRepository;
-    @Mock AwsS3Service awsS3Service;
-    @Mock CurrentUserProvider currentUserProvider;
-    @Mock CooldownService cooldownService;
     @InjectMocks UserServiceImpl service;
 
     @Test

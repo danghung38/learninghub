@@ -44,7 +44,6 @@ class ChatServiceImplTest {
     @Mock EnrollmentRepository enrollmentRepository;
     @Mock CurrentUserProvider currentUserProvider;
     @Mock SimpMessagingTemplate messagingTemplate;
-    @Mock AwsS3Service awsS3Service;
     @InjectMocks ChatServiceImpl service;
 
     @Test

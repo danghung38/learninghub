@@ -49,7 +49,6 @@ class WithdrawalServiceImplTest {
     @Mock WithdrawalMapper withdrawalMapper;
     @Mock CurrentUserProvider currentUserProvider;
     @Mock NotificationService notificationService;
-    @Mock AwsS3Service awsS3Service;
     @InjectMocks WithdrawalServiceImpl service;
 
     @BeforeEach

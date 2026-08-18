@@ -1,6 +1,5 @@
 package com.dxh.learninghub.service;
 
-import com.dxh.learninghub.dto.response.CoursePreviewResponse;
 import com.dxh.learninghub.dto.response.CourseResponse;
 import com.dxh.learninghub.dto.response.CourseUploadResponse;
 import com.dxh.learninghub.entity.Course;
@@ -37,7 +36,6 @@ class CourseServiceImplTest {
     @Mock CurrentUserProvider currentUserProvider;
     @Mock CourseRepository courseRepository;
     @Mock LessonRepository lessonRepository;
-    @Mock AwsS3Service awsS3Service;
     @Mock NotificationService notificationService;
     @Mock UserRepository userRepository;
     @InjectMocks CourseServiceImpl service;

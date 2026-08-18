@@ -4,7 +4,6 @@ import com.dxh.learninghub.entity.Role;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
-import com.dxh.learninghub.mapper.UserMapper;
 import com.dxh.learninghub.repo.RoleRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.impl.admin.AdminUserServiceImpl;
@@ -29,7 +28,6 @@ class AdminUserServiceImplTest {
 
     @Mock UserRepository userRepository;
     @Mock RoleRepository roleRepository;
-    @Mock UserMapper userMapper;
 
     @InjectMocks AdminUserServiceImpl adminUserService;
 

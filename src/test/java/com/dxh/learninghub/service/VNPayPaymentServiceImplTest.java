@@ -45,8 +45,6 @@ class VNPayPaymentServiceImplTest {
     @Mock PointTransactionRepository pointTransactionRepository;
     @Mock UserRepository userRepository;
     @Mock CurrentUserProvider currentUserProvider;
-    @Mock PointTransactionMapper pointTransactionMapper;
-    @Mock NotificationService notificationService;
     @Mock VNPayProperties properties;
     @Mock VNPayUtil vnPayUtil;
     @InjectMocks VNPayPaymentServiceImpl service;
