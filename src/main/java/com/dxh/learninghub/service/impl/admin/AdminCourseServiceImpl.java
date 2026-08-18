@@ -100,6 +100,34 @@ public class AdminCourseServiceImpl implements AdminCourseService {
         notifyCourseAuthor(course, "Course unbanned", "Your course \"" + course.getTitle() + "\" has been unbanned and returned to draft for review and resubmission");
     }
 
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.COURSES, key = "#id"),
+            @CacheEvict(cacheNames = CacheNames.COURSE_LIST, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.COURSE_TITLE, allEntries = true)
+    })
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public CourseResponse restore(Long id) {
+        Course course = findCourse(id);
+
+        // Kiểm tra xem course có thực sự đang bị xóa mềm hay không
+        if (course.getStatus() != CourseStatus.DELETED) {
+            throw new AppException(ErrorCode.COURSE_NOT_DELETED);
+        }
+
+        // Khôi phục lại trạng thái bản nháp (DRAFT) để giáo viên có thể chỉnh sửa/gửi duyệt lại
+        course.setStatus(CourseStatus.DRAFT);
+
+        notifyCourseAuthor(
+                course,
+                "Course restored",
+                "Your course \"" + course.getTitle() + "\" has been restored by an administrator and returned to draft."
+        );
+
+        return courseMapper.courseToCourseResponse(course);
+    }
+
     @Transactional
     @Caching(evict = {
             @CacheEvict(cacheNames = CacheNames.COURSES, key = "#id"),
