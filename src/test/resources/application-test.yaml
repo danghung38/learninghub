@@ -1,0 +1,88 @@
+server:
+  port: 0
+  servlet:
+    context-path: /api/v1
+
+app:
+  frontend-url: http://localhost:5173
+  admin:
+    username: testadmin
+    password: test-password
+    full-name: Test Admin
+    email: test-admin@learninghub.local
+    phone-number: "0900000000"
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:learninghub-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+  flyway:
+    enabled: false
+  cache:
+    type: none
+  task:
+    scheduling:
+      enabled: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  brevo:
+    api-key: test-api-key
+    from-email: no-reply@learninghub.local
+    from-name: LearningHub Test
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-google-client-id
+
+jwt:
+  signerKey: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  valid-duration: 1
+  refreshable-duration: 24
+
+openapi:
+  service:
+    api-docs: learninghub-test
+    server: http://localhost
+    title: LearningHub Test
+    version: test
+
+aws:
+  s3.secret-key: test-secret-key
+  s3.access-key: test-access-key
+  s3.bucket-name: learninghub-test
+  s3.base-prefix: test
+
+payment:
+  vnpay:
+    pay-url: https://sandbox.vnpay.vn/paymentv2/vpcpay.html
+    return-url: http://localhost/api/v1/payments/vnpay/return
+    frontend-return-url: http://localhost/payment-result
+    tmn-code: TESTCODE
+    hash-secret: test-hash-secret
+    amount-per-point: 1000
+    expire-minutes: 15
+
+jobs:
+  payment-expiration.enabled: false
+  notification-cleanup.enabled: false
+  advertisement-deactivation.enabled: false
+  s3-orphan-cleanup.enabled: false
+  deleted-course-content-cleanup.enabled: false
+
+logging:
+  level:
+    org.hibernate.SQL: warn
