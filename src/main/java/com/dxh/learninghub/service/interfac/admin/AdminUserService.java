@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.interfac.admin;
 
+import com.dxh.learninghub.dto.request.AdminResetPasswordRequest;
 import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.UserResponse;
@@ -20,5 +21,7 @@ public interface AdminUserService {
     void addRole(Long userId, String roleName);
 
     void removeRole(Long userId, String roleName);
+
+    void resetPasswordByAdmin(Long userId, AdminResetPasswordRequest request);
 
 }

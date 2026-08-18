@@ -1,5 +1,6 @@
 package com.dxh.learninghub.controller.admin;
 
+import com.dxh.learninghub.dto.request.AdminResetPasswordRequest;
 import com.dxh.learninghub.dto.request.UserSearchFilterRequest;
 import com.dxh.learninghub.dto.response.*;
 import com.dxh.learninghub.service.interfac.admin.AdminUserService;
@@ -56,6 +57,23 @@ public class AdminUserController {
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("User unbanned successfully")
+                .build();
+    }
+
+    @Operation(
+            summary = "Admin reset user password",
+            description = "Reset user password manually by admin"
+    )
+    @PostMapping("/{userId}/reset-password")
+    public ApiResponse<Void> resetPasswordByAdmin(
+            @PathVariable Long userId,
+            @RequestBody @Valid AdminResetPasswordRequest request
+    ) {
+        adminUserService.resetPasswordByAdmin(userId, request);
+
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Password reset successfully")
                 .build();
     }
 
