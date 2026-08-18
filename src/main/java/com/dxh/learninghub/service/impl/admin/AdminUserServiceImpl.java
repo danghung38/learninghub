@@ -120,6 +120,7 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Transactional
     @Override
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public void resetPasswordByAdmin(Long userId, AdminResetPasswordRequest request) {
         User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
