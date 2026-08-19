@@ -2,6 +2,17 @@
 
 Backend REST API cho nền tảng học trực tuyến LearningHub. Hệ thống quản lý người dùng, khóa học, quá trình học, điểm, thanh toán, doanh thu giảng viên, rút tiền, đánh giá, chat realtime, thông báo và chứng chỉ.
 
+## Tổng quan nhanh
+
+- **135 REST API endpoint**: 93 endpoint cho auth/public/user/teacher và 42 endpoint quản trị.
+- **1 WebSocket/STOMP message endpoint** cho chat realtime.
+- **31 controller class**: 30 REST controller và 1 WebSocket controller.
+- **21 test class** gồm controller slice test, service unit test, repository integration test với H2 và application context test.
+- **CI/CD bằng GitHub Actions**: chạy test, build Maven, build/push Docker image và tự động triển khai lên EC2 bằng Docker Compose.
+- Tìm kiếm động bằng **JPA Specification**, phân trang và sắp xếp cho course/user.
+- Giảm truy vấn **N+1** bằng `@EntityGraph`, JPQL `join fetch` và `@BatchSize`.
+- Course hỗ trợ **soft delete**, khóa chỉnh sửa sau khi xóa, admin có thể khôi phục và scheduled job dọn chapter/lesson.
+
 ## Mục tiêu dự án
 
 - Tổ chức REST API theo layered architecture: controller → service → repository.
@@ -37,6 +48,8 @@ Backend REST API cho nền tảng học trực tuyến LearningHub. Hệ thống
 
 - CRUD course, chapter, lesson; upload thumbnail, video và tài liệu.
 - Quy trình `DRAFT → PENDING → APPROVED/REJECTED/BANNED/DELETED`.
+- Chủ sở hữu có thể soft-delete course sang trạng thái `DELETED`; course bị ẩn khỏi luồng công khai và chuyển sang chế độ chỉ đọc.
+- Admin có thể khôi phục course `DELETED` về `DRAFT` trước khi nội dung bị dọn; job định kỳ xóa chapter/lesson của course đã xóa mềm, còn tài nguyên S3 không còn tham chiếu được xử lý bởi `S3OrphanCleanupJob`.
 - Tìm kiếm, lọc, sắp xếp và phân trang bằng JPA Specification.
 - Mua khóa học bằng point, enrollment, yêu thích, đánh giá và phản hồi.
 - Theo dõi tiến độ lesson/course và danh sách khóa học của người dùng.
@@ -120,6 +133,26 @@ File nhỏ có thể đi qua backend; video, tài liệu và ảnh chat dùng pr
 ### Redis strategy
 
 Redis dùng cho cache, rate limit và blacklist token. Cache liên quan course được evict sau khi course cập nhật hoặc đổi trạng thái.
+
+### Xử lý N+1 query
+
+- Dùng `@EntityGraph` tại repository để tải trước các quan hệ cần cho response như course-author, enrollment-course, review-user/course, conversation-participants và point transaction.
+- Dùng `@BatchSize` cho collection role của user để tránh phát sinh một truy vấn cho từng tài khoản khi phân trang danh sách.
+- Mapping sang DTO được thực hiện sau khi dữ liệu cần thiết đã được fetch, hạn chế truy cập lazy association ngoài chủ đích.
+
+### Tìm kiếm động bằng JPA Specification
+
+- `CourseSpecification` phục vụ tìm kiếm course công khai và tìm kiếm quản trị với điều kiện trạng thái khác nhau.
+- `UserSpecification` ghép các điều kiện username, họ tên, role, trạng thái tài khoản và các bộ lọc quản trị.
+- `JpaSpecificationExecutor` kết hợp Specification với `Pageable`, cho phép thêm bộ lọc mới mà không phải tạo nhiều repository method cố định.
+
+### Vòng đời soft-delete của course
+
+1. Chủ sở hữu xóa course: backend chuyển trạng thái sang `DELETED`, không xóa ngay bản ghi course.
+2. Course `DELETED` bị ẩn khỏi kết quả công khai và không cho chủ sở hữu sửa chapter/lesson.
+3. Admin vẫn xem được course đã xóa và có thể restore về `DRAFT`.
+4. `DeletedCourseContentCleanupJob` chạy theo lịch để xóa chapter và lesson thuộc course `DELETED`.
+5. `S3OrphanCleanupJob` xử lý các object S3 không còn được tham chiếu theo grace period riêng.
 
 ## Cấu hình môi trường
 
@@ -268,9 +301,47 @@ Build image backend:
 docker build -t learninghub-backend .
 ```
 
+## CI/CD
+
+Hai workflow nằm trong `.github/workflows`:
+
+### Continuous Integration — `ci.yml`
+
+Pipeline chạy khi push lên `main` hoặc `master`:
+
+1. Checkout source code.
+2. Khởi tạo Redis service cho test.
+3. Cài Amazon Corretto JDK 21 và cache Maven dependency.
+4. Chạy toàn bộ test bằng `mvn -B test`.
+5. Build artifact bằng `mvn -B package -DskipTests`.
+6. Build Docker image và push lên Docker Hub với tag là Git commit SHA.
+
+### Continuous Deployment — `cd.yml`
+
+CD chỉ chạy khi workflow CI hoàn tất thành công:
+
+1. Kết nối EC2 qua SSH bằng GitHub Secrets.
+2. Cập nhật `IMAGE_TAG` trong file `.env` trên server bằng commit SHA vừa build.
+3. Pull image mới bằng Docker Compose.
+4. Recreate riêng service backend và dọn Docker image cũ.
+
+Các biến/secret cần cấu hình trên GitHub: `DOCKER_USERNAME`, `DOCKER_TOKEN`, `SSH_HOST`, `SSH_USERNAME`, `SSH_PRIVATE_KEY`.
+
 ## API tiêu biểu
 
 Tất cả endpoint bên dưới đều có prefix `/api/v1`:
+
+### Thống kê API
+
+| Nhóm | Controller | REST endpoint |
+|---|---:|---:|
+| Auth, public, learner và teacher | 21 | 93 |
+| Admin | 9 | 42 |
+| **Tổng REST API** | **30** | **135** |
+
+Ngoài REST API, `ChatWebSocketController` cung cấp 1 `@MessageMapping("/chat.send")` cho luồng gửi tin nhắn STOMP. Số liệu được tính trực tiếp từ các method có `@GetMapping`, `@PostMapping`, `@PutMapping`, `@PatchMapping` hoặc `@DeleteMapping` trong source hiện tại.
+
+### Một số endpoint chính
 
 | Module | Method | Endpoint | Chức năng |
 |---|---|---|---|
@@ -333,34 +404,68 @@ redis-cli TTL "learninghub::courses::1"
 ## Cấu trúc source
 
 ```text
-src/main/java/com/dxh/learninghub/
-├─ configuration/     # Security, Redis, WebSocket, OpenAPI, VNPAY
-├─ constant/          # Hằng số và tên cache
-├─ controller/        # REST/WebSocket controller; admin/ cho Admin
-├─ dto/               # request/response DTO
-├─ entity/            # JPA entity và Redis model
-├─ enums/             # Enum nghiệp vụ
-├─ exception/         # ErrorCode và global handler
-├─ job/               # Scheduled jobs
-├─ mapper/            # MapStruct mapper
-├─ repo/               # JPA/Redis repository và specification
-├─ service/            # Interface, implementation và external service
-├─ utils/              # Tiện ích dùng chung
-└─ validator/          # Custom validator và rate-limit aspect
+learninghub/
+├─ .github/workflows/
+│  ├─ ci.yml                         # Test, Maven build, build/push Docker image
+│  └─ cd.yml                         # Deploy image lên EC2 bằng Docker Compose
+├─ src/main/java/com/dxh/learninghub/
+│  ├─ aspect/                        # AOP: rate limit và cross-cutting concern
+│  ├─ configuration/                 # Security, Redis, WebSocket, OpenAPI, S3, VNPAY
+│  ├─ constant/                      # Hằng số, cache name và cấu hình dùng chung
+│  ├─ controller/
+│  │  └─ admin/                      # REST controller dành cho quản trị
+│  ├─ dto/
+│  │  ├─ request/                    # Request DTO và validation contract
+│  │  └─ response/                   # Response DTO/API response
+│  ├─ entity/                        # JPA entity và model persistence
+│  ├─ enums/                         # Enum trạng thái và nghiệp vụ
+│  ├─ exception/                     # ErrorCode, AppException, global handler
+│  ├─ job/                           # Scheduled cleanup/expiration jobs
+│  ├─ mapper/                        # MapStruct mapper
+│  ├─ repo/
+│  │  └─ specification/              # CourseSpecification, UserSpecification
+│  ├─ service/
+│  │  ├─ interfac/                   # Service contract (tên thư mục hiện tại)
+│  │  └─ impl/                       # Business logic và transaction boundary
+│  ├─ utils/
+│  │  └─ storage/                    # Tiện ích xử lý object key/storage
+│  └─ validator/                     # Custom Bean Validation
+├─ src/main/resources/
+│  ├─ db/migration/                  # Flyway migration
+│  ├─ templates/                     # Email/certificate HTML template
+│  ├─ application.yaml               # Cấu hình dùng chung
+│  ├─ application-dev.yml            # Profile local/dev
+│  └─ application-prod.yml           # Profile production
+├─ src/test/java/com/dxh/learninghub/
+│  ├─ controller/                    # WebMvc controller slice test
+│  ├─ service/                       # Service unit test
+│  └─ repo/                          # Repository integration test
+├─ src/test/resources/
+│  └─ application-test.yaml          # H2 MySQL compatibility mode
+├─ Dockerfile
+├─ docker-compose.yml
+└─ pom.xml
 ```
 
 ## Testing
+
+Backend hiện có **21 test class**:
+
+- `@WebMvcTest` cho các controller quan trọng: authentication, user, course, enrollment, conversation, VNPAY và các controller admin chính.
+- Unit test bằng Mockito cho service authentication, user, course, enrollment, chat, VNPAY, withdrawal, Turnstile và service admin.
+- `@DataJpaTest` cho repository integration test; profile test dùng H2 in-memory ở MySQL compatibility mode.
+- `@SpringBootTest` kiểm tra application context.
 
 ```bash
 ./mvnw test
 ```
 
-Có thể bổ sung unit test, repository test, security test, concurrency test và integration test bằng Testcontainers khi mở rộng dự án.
+CI chạy lại toàn bộ test trước khi Maven package và Docker image được tạo. Testcontainers, security integration test và concurrency test có thể bổ sung khi mở rộng dự án.
 
 ## Roadmap
 
 - Bổ sung integration test bằng Testcontainers.
 - Bổ sung các migration Flyway tiếp theo cho mọi thay đổi schema.
-- CI/CD, dependency scanning, metrics và tracing.
+- Bổ sung dependency scanning, metrics và tracing cho pipeline CI/CD hiện có.
 - Centralized logging và event-driven flow cho advertisement/email.
 - Mở rộng kiểm thử VNPAY callback và concurrent course purchase.
