@@ -2,6 +2,7 @@ package com.dxh.learninghub.aspect;
 
 
 import com.dxh.learninghub.service.RateLimitService;
+import com.dxh.learninghub.utils.IpUtil;
 import com.dxh.learninghub.validator.RateLimit;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class RateLimitAspect {
     @Before("@annotation(rateLimit)")
     public void checkRateLimit(RateLimit rateLimit) {
 
-        String ip = request.getRemoteAddr();
+        String ip = IpUtil.getClientIp(request);
 
         rateLimitService.checkLimit(
                 rateLimit.action().name(),

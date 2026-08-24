@@ -1,8 +1,4 @@
 server:
-  tomcat:
-    remote-ip-header: X-Forwarded-For
-    protocol-header: X-Forwarded-Proto
-    internal-proxies: "127\\.0\\.0\\.1|::1|10\\..*|172\\.(1[6-9]|2[0-3])\\..*|172\\.18\\..*|192\\.168\\..*"
   port: ${SERVER_PORT}
   servlet:
     context-path: /api/v1
