@@ -6,6 +6,7 @@ import com.dxh.learninghub.dto.response.ApiResponse;
 import com.dxh.learninghub.dto.response.AuthenticationResponse;
 import com.dxh.learninghub.dto.response.IntrospectResponse;
 import com.dxh.learninghub.service.interfac.AuthenticationService;
+import com.dxh.learninghub.utils.IpUtil;
 import com.nimbusds.jose.JOSEException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,7 +37,7 @@ public class AuthenticationController {
     @Operation(summary = "Log in", description = "Authenticate credentials and issue access and refresh tokens")
     @PostMapping("/login")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody @Valid AuthenticationRequest request, HttpServletRequest servletRequest){
-        String ip = servletRequest.getRemoteAddr();
+        String ip = IpUtil.getClientIp(servletRequest);
         var result = authenticationService.login(request, ip);
         return ApiResponse.<AuthenticationResponse>builder()
                 .code(HttpStatus.OK.value())
