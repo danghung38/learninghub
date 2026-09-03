@@ -21,7 +21,7 @@ import java.time.ZoneId;
         matchIfMissing = true)
 public class PaymentExpirationJob {
 
-    private static final ZoneId VNPAY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final PaymentRepository paymentRepository;
 
@@ -31,9 +31,9 @@ public class PaymentExpirationJob {
     @Transactional
     public void expirePendingPayments() {
         int updated = paymentRepository.expirePendingPayments(
-                LocalDateTime.now(VNPAY_ZONE));
+                LocalDateTime.now(ZONE));
         if (updated > 0) {
-            log.info("Marked {} pending VNPAY payment(s) as expired", updated);
+            log.info("Marked {} pending payment(s) as expired", updated);
         }
     }
 }

@@ -60,6 +60,17 @@ public class PaymentController {
                 .build();
     }
 
+    @Operation(summary = "Cancel a payOS deposit", description = "Synchronize a user-canceled payOS checkout with the local payment status")
+    @PostMapping("/deposits/{transactionRef}/cancel")
+    public ApiResponse<Void> cancelPayOSPayment(
+            @PathVariable String transactionRef) {
+        paymentService.cancelPayOSPayment(transactionRef);
+        return ApiResponse.<Void>builder()
+                .code(HttpStatus.OK.value())
+                .message("Cancel payment successfully")
+                .build();
+    }
+
     @Operation(summary = "Get my deposits", description = "Filter and paginate the current user's deposit history")
     @GetMapping("/deposits")
     public ApiResponse<PageResponse<PaymentSummaryResponse>> getMyPayments(
