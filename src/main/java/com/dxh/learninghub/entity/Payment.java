@@ -29,7 +29,7 @@ public class Payment extends AbstractEntity<Long> {
     @Column(name = "transaction_id", nullable = false, unique = true, length = 100)
     String merchantTransactionRef;
 
-    @Column(name = "gateway_transaction_no", unique = true, length = 30)
+    @Column(name = "gateway_transaction_no", unique = true, length = 100)
     String gatewayTransactionNo;
 
     @Enumerated(EnumType.STRING)

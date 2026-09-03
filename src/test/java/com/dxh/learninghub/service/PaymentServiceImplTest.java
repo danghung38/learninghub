@@ -4,6 +4,7 @@ import com.dxh.learninghub.configuration.VNPayProperties;
 import com.dxh.learninghub.dto.request.CreateDepositRequest;
 import com.dxh.learninghub.dto.payment.VNPayIpnResponse;
 import com.dxh.learninghub.dto.payment.PaymentCheckoutResponse;
+import com.dxh.learninghub.dto.payment.PayOSWebhookResponse;
 import com.dxh.learninghub.entity.Payment;
 import com.dxh.learninghub.entity.PointTransaction;
 import com.dxh.learninghub.entity.User;
@@ -19,6 +20,7 @@ import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.impl.PaymentServiceImpl;
 import com.dxh.learninghub.service.interfac.NotificationService;
 import com.dxh.learninghub.service.payment.PaymentGatewayStrategy;
+import com.dxh.learninghub.service.payment.WebhookPaymentGatewayStrategy;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import com.dxh.learninghub.utils.VNPayUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import vn.payos.model.webhooks.Webhook;
+import vn.payos.model.webhooks.WebhookData;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,6 +57,7 @@ class PaymentServiceImplTest {
     @Mock VNPayProperties properties;
     @Mock VNPayUtil vnPayUtil;
     @Mock PaymentGatewayStrategy paymentGatewayStrategy;
+    @Mock WebhookPaymentGatewayStrategy payOSGatewayStrategy;
     PaymentServiceImpl service;
 
     @BeforeEach
@@ -65,11 +71,12 @@ class PaymentServiceImplTest {
                 notificationService,
                 properties,
                 vnPayUtil,
-                List.of(paymentGatewayStrategy));
+                List.of(paymentGatewayStrategy, payOSGatewayStrategy));
         lenient().when(properties.getAmountPerPoint()).thenReturn(1_000L);
         lenient().when(properties.getExpireMinutes()).thenReturn(15L);
         lenient().when(properties.getTmnCode()).thenReturn("LEARNING");
         lenient().when(paymentGatewayStrategy.paymentMethod()).thenReturn(PaymentMethod.VNPAY);
+        lenient().when(payOSGatewayStrategy.paymentMethod()).thenReturn(PaymentMethod.PAYOS);
     }
 
     @Test
@@ -143,6 +150,44 @@ class PaymentServiceImplTest {
         verify(pointTransactionRepository).save(transaction.capture());
         assertThat(transaction.getValue().getTransactionType()).isEqualTo(PointTransactionType.DEPOSIT);
         assertThat(transaction.getValue().getPayment()).isSameAs(payment);
+    }
+
+    @Test
+    void processPayOSWebhook_acceptsUuidReferenceAndCreditsPointsExactlyOnce() {
+        String gatewayReference = "2c9d02e5-316b-477c-8167-c52dd3963f57";
+        User user = user(5L, 20L);
+        Payment payment = Payment.builder()
+                .user(user)
+                .merchantTransactionRef("1788444557483")
+                .paymentMethod(PaymentMethod.PAYOS)
+                .amount(BigDecimal.valueOf(2_000L))
+                .pointsReceived(2L)
+                .status(PaymentStatus.PENDING)
+                .build();
+        payment.setId(10L);
+        WebhookData data = WebhookData.builder()
+                .orderCode(1_788_444_557_483L)
+                .amount(2_000L)
+                .reference(gatewayReference)
+                .transactionDateTime("2026-09-03 21:09:41")
+                .code("00")
+                .desc("Thành công")
+                .build();
+        Webhook webhook = new Webhook("00", "success", true, data, "valid-signature");
+
+        when(payOSGatewayStrategy.verifyWebhook(webhook)).thenReturn(data);
+        when(paymentRepository.findByTransactionRefForUpdate("1788444557483"))
+                .thenReturn(Optional.of(payment));
+        when(pointTransactionRepository.existsByPaymentId(10L)).thenReturn(false);
+        when(userRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(user));
+
+        PayOSWebhookResponse response = service.processPayOSWebhook(webhook);
+
+        assertThat(response.code()).isEqualTo("00");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
+        assertThat(payment.getGatewayTransactionNo()).isEqualTo(gatewayReference);
+        assertThat(user.getPoints()).isEqualTo(22L);
+        verify(pointTransactionRepository).save(any(PointTransaction.class));
     }
 
     @Test
