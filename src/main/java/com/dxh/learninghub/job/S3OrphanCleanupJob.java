@@ -33,9 +33,9 @@ public class S3OrphanCleanupJob {
 
     static final List<String> MANAGED_PREFIXES =
             List.of(
-                    "images/", "files/", "videos/", "documents/",
-                    "avatars/", "teachers/", "courses/", "withdrawals/",
-                    "certificates/", "imagechat/", "advertisements/");
+                    "images/", "files/", "videos/", "documents/", "avatars/",
+                    "teachers/", "courses/", "withdrawals/", "certificates/",
+                    "advertisements/");
 
     final AwsS3Service awsS3Service;
     final S3ObjectReferenceRepository referenceRepository;
