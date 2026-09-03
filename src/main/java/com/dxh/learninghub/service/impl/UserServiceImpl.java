@@ -244,27 +244,12 @@ public class UserServiceImpl implements UserService {
     private void sendVerificationToken(User user, String email, String fullName) {
         String secretCode = generateUniqueOtp();
 
-        RedisVerificationToken token =
-                redisVrRepository.save(
-                        RedisVerificationToken.builder()
-                                .secretKey(secretCode)
-                                .userId(user.getId())
-                                .verifyType(VerifyType.REGISTER)
-                                .ttl(VERIFY_TTL_SECONDS)
-                                .build()
-                );
+        redisVrRepository.save(RedisVerificationToken.builder()
+                .secretKey(secretCode).userId(user.getId())
+                .verifyType(VerifyType.REGISTER)
+                .ttl(VERIFY_TTL_SECONDS).build());
 
-
-        try {
-            emailService.sendVerificationEmail(
-                    email,
-                    fullName,
-                    secretCode
-            );
-        } catch (RuntimeException exception) {
-            redisVrRepository.delete(token);
-            throw exception;
-        }
+        emailService.sendVerificationEmail(email, fullName, secretCode);
     }
 
 

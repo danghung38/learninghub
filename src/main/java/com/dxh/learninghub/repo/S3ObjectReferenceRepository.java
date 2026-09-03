@@ -83,13 +83,6 @@ public class S3ObjectReferenceRepository {
                 SELECT payment_proof_url
                 FROM withdrawals
                 WHERE payment_proof_url IS NOT NULL
-
-                UNION ALL
-                
-                SELECT content
-                FROM messages
-                WHERE type = 'IMAGE'
-                AND content IS NOT NULL
                 """;
 
         List<?> rawReferences = entityManager.createNativeQuery(nativeSql).getResultList();
