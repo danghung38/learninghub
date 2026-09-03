@@ -165,13 +165,24 @@ class PaymentServiceImplTest {
                 .status(PaymentStatus.PENDING)
                 .build();
         payment.setId(10L);
+
         WebhookData data = WebhookData.builder()
                 .orderCode(1_788_444_557_483L)
                 .amount(2_000L)
+                .description("Thành công")
+                .accountNumber("123456789")
                 .reference(gatewayReference)
                 .transactionDateTime("2026-09-03 21:09:41")
+                .currency("VND")
                 .code("00")
                 .desc("Thành công")
+                .paymentLinkId("plink_123456789")      // <--- Giải quyết lỗi paymentLinkId null
+                .counterAccountBankName("NCB")
+                .counterAccountBankId("970419")
+                .counterAccountName("NGUYEN VAN A")
+                .counterAccountNumber("987654321")
+                .virtualAccountName("LEARNINGHUB")
+                .virtualAccountNumber("123456")
                 .build();
         Webhook webhook = new Webhook("00", "success", true, data, "valid-signature");
 
@@ -189,7 +200,6 @@ class PaymentServiceImplTest {
         assertThat(user.getPoints()).isEqualTo(22L);
         verify(pointTransactionRepository).save(any(PointTransaction.class));
     }
-
     @Test
     void cancelPayOSPayment_marksOnlyPendingOwnPaymentAsCanceled() {
         User user = user(5L, 20L);
