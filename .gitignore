@@ -34,5 +34,6 @@ build/
 .env
 .env.*
 !.env.example
+.m2-local/
 docker-compose.yml
 claude

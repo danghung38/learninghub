@@ -1,4 +1,4 @@
-package com.dxh.learninghub.dto.response;
+package com.dxh.learninghub.dto.payment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

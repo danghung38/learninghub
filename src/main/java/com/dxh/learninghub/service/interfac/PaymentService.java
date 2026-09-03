@@ -1,26 +1,32 @@
 package com.dxh.learninghub.service.interfac;
 
-import com.dxh.learninghub.dto.request.CreateVNPayDepositRequest;
-import com.dxh.learninghub.dto.response.VNPayIpnResponse;
-import com.dxh.learninghub.dto.response.VNPayPaymentResponse;
-import com.dxh.learninghub.dto.response.VNPayReturnResponse;
+import com.dxh.learninghub.dto.request.CreateDepositRequest;
+import com.dxh.learninghub.dto.payment.VNPayIpnResponse;
+import com.dxh.learninghub.dto.payment.PaymentCheckoutResponse;
+import com.dxh.learninghub.dto.payment.VNPayReturnResponse;
+import com.dxh.learninghub.dto.payment.PayOSWebhookResponse;
 import com.dxh.learninghub.dto.response.PaymentSummaryResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.admin.AdminPaymentResponse;
-import com.dxh.learninghub.enums.PaymentMethod;
 import com.dxh.learninghub.enums.PaymentStatus;
+import com.dxh.learninghub.enums.PaymentMethod;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.Map;
 
-public interface VNPayPaymentService {
-    VNPayPaymentResponse createDeposit(
-            CreateVNPayDepositRequest request,
+import vn.payos.model.webhooks.Webhook;
+
+public interface PaymentService {
+    PaymentCheckoutResponse createDeposit(
+            CreateDepositRequest request,
             HttpServletRequest servletRequest);
 
     VNPayIpnResponse processIpn(Map<String, String> params);
+
+    /** Receive and acknowledge the signed, server-to-server payOS webhook. */
+    PayOSWebhookResponse processPayOSWebhook(Webhook webhook);
 
     VNPayReturnResponse processReturn(Map<String, String> params);
 

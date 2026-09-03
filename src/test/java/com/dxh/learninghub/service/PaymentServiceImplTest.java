@@ -1,13 +1,14 @@
 package com.dxh.learninghub.service;
 
 import com.dxh.learninghub.configuration.VNPayProperties;
-import com.dxh.learninghub.dto.request.CreateVNPayDepositRequest;
-import com.dxh.learninghub.dto.response.VNPayIpnResponse;
-import com.dxh.learninghub.dto.response.VNPayPaymentResponse;
+import com.dxh.learninghub.dto.request.CreateDepositRequest;
+import com.dxh.learninghub.dto.payment.VNPayIpnResponse;
+import com.dxh.learninghub.dto.payment.PaymentCheckoutResponse;
 import com.dxh.learninghub.entity.Payment;
 import com.dxh.learninghub.entity.PointTransaction;
 import com.dxh.learninghub.entity.User;
 import com.dxh.learninghub.enums.PaymentStatus;
+import com.dxh.learninghub.enums.PaymentMethod;
 import com.dxh.learninghub.enums.PointTransactionType;
 import com.dxh.learninghub.exception.AppException;
 import com.dxh.learninghub.exception.ErrorCode;
@@ -15,21 +16,22 @@ import com.dxh.learninghub.mapper.PointTransactionMapper;
 import com.dxh.learninghub.repo.PaymentRepository;
 import com.dxh.learninghub.repo.PointTransactionRepository;
 import com.dxh.learninghub.repo.UserRepository;
-import com.dxh.learninghub.service.impl.VNPayPaymentServiceImpl;
+import com.dxh.learninghub.service.impl.PaymentServiceImpl;
 import com.dxh.learninghub.service.interfac.NotificationService;
+import com.dxh.learninghub.service.payment.PaymentGatewayStrategy;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import com.dxh.learninghub.utils.VNPayUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,7 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class VNPayPaymentServiceImplTest {
+class PaymentServiceImplTest {
 
     @Mock PaymentRepository paymentRepository;
     @Mock PointTransactionRepository pointTransactionRepository;
@@ -49,13 +51,25 @@ class VNPayPaymentServiceImplTest {
     @Mock NotificationService notificationService;
     @Mock VNPayProperties properties;
     @Mock VNPayUtil vnPayUtil;
-    @InjectMocks VNPayPaymentServiceImpl service;
+    @Mock PaymentGatewayStrategy paymentGatewayStrategy;
+    PaymentServiceImpl service;
 
     @BeforeEach
     void setUp() {
+        service = new PaymentServiceImpl(
+                paymentRepository,
+                pointTransactionRepository,
+                userRepository,
+                currentUserProvider,
+                pointTransactionMapper,
+                notificationService,
+                properties,
+                vnPayUtil,
+                List.of(paymentGatewayStrategy));
         lenient().when(properties.getAmountPerPoint()).thenReturn(1_000L);
         lenient().when(properties.getExpireMinutes()).thenReturn(15L);
         lenient().when(properties.getTmnCode()).thenReturn("LEARNING");
+        lenient().when(paymentGatewayStrategy.paymentMethod()).thenReturn(PaymentMethod.VNPAY);
     }
 
     @Test
@@ -67,13 +81,14 @@ class VNPayPaymentServiceImplTest {
             payment.setId(10L);
             return payment;
         });
-        when(vnPayUtil.buildPaymentUrl(any(Payment.class), eq("203.0.113.7"), any()))
-                .thenReturn("https://sandbox.vnpay.vn/pay");
         MockHttpServletRequest servletRequest = new MockHttpServletRequest();
         servletRequest.setRemoteAddr("203.0.113.7");
+        when(paymentGatewayStrategy.createPaymentUrl(any(Payment.class), same(servletRequest), any()))
+                .thenReturn("https://sandbox.vnpay.vn/pay");
 
-        VNPayPaymentResponse response = service.createDeposit(
-                new CreateVNPayDepositRequest(100_000L), servletRequest);
+        PaymentCheckoutResponse response = service.createDeposit(
+                new CreateDepositRequest(100_000L, PaymentMethod.VNPAY),
+                servletRequest);
 
         assertThat(response.amount()).isEqualByComparingTo(BigDecimal.valueOf(100_000L));
         assertThat(response.points()).isEqualTo(100L);
@@ -87,7 +102,8 @@ class VNPayPaymentServiceImplTest {
     @Test
     void createDeposit_rejectsAmountNotDivisibleByPointRate() {
         assertThatThrownBy(() -> service.createDeposit(
-                new CreateVNPayDepositRequest(100_500L), new MockHttpServletRequest()))
+                new CreateDepositRequest(100_500L, PaymentMethod.VNPAY),
+                new MockHttpServletRequest()))
                 .isInstanceOfSatisfying(AppException.class,
                         ex -> assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.INVALID_DEPOSIT_AMOUNT));
         verifyNoInteractions(paymentRepository, currentUserProvider, vnPayUtil);

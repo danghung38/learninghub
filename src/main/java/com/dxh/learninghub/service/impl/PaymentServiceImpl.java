@@ -1,10 +1,11 @@
 package com.dxh.learninghub.service.impl;
 
 import com.dxh.learninghub.configuration.VNPayProperties;
-import com.dxh.learninghub.dto.request.CreateVNPayDepositRequest;
-import com.dxh.learninghub.dto.response.VNPayIpnResponse;
-import com.dxh.learninghub.dto.response.VNPayPaymentResponse;
-import com.dxh.learninghub.dto.response.VNPayReturnResponse;
+import com.dxh.learninghub.dto.request.CreateDepositRequest;
+import com.dxh.learninghub.dto.payment.VNPayIpnResponse;
+import com.dxh.learninghub.dto.payment.PaymentCheckoutResponse;
+import com.dxh.learninghub.dto.payment.VNPayReturnResponse;
+import com.dxh.learninghub.dto.payment.PayOSWebhookResponse;
 import com.dxh.learninghub.dto.response.PaymentSummaryResponse;
 import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.admin.AdminPaymentResponse;
@@ -21,7 +22,9 @@ import com.dxh.learninghub.repo.PaymentRepository;
 import com.dxh.learninghub.repo.PointTransactionRepository;
 import com.dxh.learninghub.repo.UserRepository;
 import com.dxh.learninghub.service.interfac.NotificationService;
-import com.dxh.learninghub.service.interfac.VNPayPaymentService;
+import com.dxh.learninghub.service.interfac.PaymentService;
+import com.dxh.learninghub.service.payment.PaymentGatewayStrategy;
+import com.dxh.learninghub.service.payment.WebhookPaymentGatewayStrategy;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import com.dxh.learninghub.utils.VNPayUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,17 +42,24 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
+
+import vn.payos.model.webhooks.Webhook;
+import vn.payos.model.webhooks.WebhookData;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class VNPayPaymentServiceImpl implements VNPayPaymentService {
+public class PaymentServiceImpl implements PaymentService {
 
     private static final DateTimeFormatter TRANSACTION_TIME_FORMAT =
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -63,13 +73,21 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
     NotificationService notificationService;
     VNPayProperties properties;
     VNPayUtil vnPayUtil;
+    List<PaymentGatewayStrategy> paymentGatewayStrategies;
 
     @Override
     @Transactional
-    public VNPayPaymentResponse createDeposit(
-            CreateVNPayDepositRequest request,
+    public PaymentCheckoutResponse createDeposit(
+            CreateDepositRequest request,
             HttpServletRequest servletRequest) {
-        if (request.amount() % properties.getAmountPerPoint() != 0) {
+        PaymentMethod method = request == null ? null : request.paymentMethod();
+        if (method == null) {
+            throw new AppException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+        }
+        if (request == null
+                || request.amount() == null
+                || request.amount() < 1_000L
+                || request.amount() % properties.getAmountPerPoint() != 0) {
             throw new AppException(ErrorCode.INVALID_DEPOSIT_AMOUNT);
         }
 
@@ -79,21 +97,34 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         Payment payment = paymentRepository.save(
                 Payment.builder()
                         .user(user)
-                        .merchantTransactionRef(newTransactionRef())
-                        .paymentMethod(PaymentMethod.VNPAY)
+                        .merchantTransactionRef(method == PaymentMethod.PAYOS
+                                ? newPayOSOrderCode()
+                                : newTransactionRef())
+                        .paymentMethod(method)
                         .status(PaymentStatus.PENDING)
                         .amount(BigDecimal.valueOf(request.amount()))
                         .pointsReceived(points)
                         .expiresAt(now.plusMinutes(properties.getExpireMinutes()))
                         .build());
 
-        String paymentUrl = vnPayUtil.buildPaymentUrl(payment, extractIpAddress(servletRequest), now);
-        return new VNPayPaymentResponse(
+        String paymentUrl = createPaymentUrl(payment, servletRequest, now);
+        return new PaymentCheckoutResponse(
                 payment.getMerchantTransactionRef(),
                 payment.getAmount(),
                 payment.getPointsReceived(),
                 paymentUrl,
                 payment.getExpiresAt());
+    }
+
+    private String createPaymentUrl(
+            Payment payment,
+            HttpServletRequest servletRequest,
+            LocalDateTime createdAt) {
+        PaymentGatewayStrategy strategy = findStrategy(payment.getPaymentMethod());
+        if (strategy == null) {
+            throw new AppException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+        }
+        return strategy.createPaymentUrl(payment, servletRequest, createdAt);
     }
 
     @Override
@@ -155,36 +186,71 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             return ipn("02", "Order already confirmed");
         }
 
-        User user = userRepository.findByIdForUpdate(payment.getUser().getId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-        long currentPoints = user.getPoints() == null ? 0L : user.getPoints();
-        user.setPoints(Math.addExact(currentPoints, payment.getPointsReceived()));
-        payment.setStatus(PaymentStatus.COMPLETED);
-        payment.setPaidAt(parsePayDate(params.get("vnp_PayDate")));
-
-        pointTransactionRepository.save(
-                PointTransaction.builder()
-                        .user(user)
-                        .payment(payment)
-                        .points(payment.getPointsReceived())
-                        .transactionType(PointTransactionType.DEPOSIT)
-                        .description("VNPAY deposit "
-                                + payment.getMerchantTransactionRef())
-                        .build());
-
-        notificationService.createNotification(
-                user,
-                null,
-                "Top-up Successful",
-                "Transaction " + payment.getMerchantTransactionRef()
-                        + " has added " + payment.getPointsReceived()
-                        + " points to your account",
-                "/dashboard/wallet"
-        );
+        completePayment(
+                payment,
+                parsePayDate(params.get("vnp_PayDate")),
+                "VNPAY deposit " + payment.getMerchantTransactionRef());
 
         log.info("Confirmed VNPAY deposit {} and credited {} points to user {}",
-                payment.getMerchantTransactionRef(), payment.getPointsReceived(), user.getId());
+                payment.getMerchantTransactionRef(), payment.getPointsReceived(), payment.getUser().getId());
         return ipn("00", "Confirm success");
+    }
+
+    @Override
+    @Transactional
+    public PayOSWebhookResponse processPayOSWebhook(Webhook webhook) {
+        WebhookPaymentGatewayStrategy payOSStrategy = findWebhookStrategy(PaymentMethod.PAYOS);
+        if (payOSStrategy == null) {
+            throw new AppException(ErrorCode.PAYMENT_GATEWAY_ERROR);
+        }
+        WebhookData data = payOSStrategy.verifyWebhook(webhook);
+        if (data == null || data.getOrderCode() == null || data.getAmount() == null) {
+            return payos("99", "Invalid webhook data");
+        }
+
+        String transactionRef = String.valueOf(data.getOrderCode());
+        Payment payment = paymentRepository
+                .findByTransactionRefForUpdate(transactionRef)
+                .orElse(null);
+        if (payment == null || payment.getPaymentMethod() != PaymentMethod.PAYOS) {
+            return payos("01", "Order not found");
+        }
+        if (!isExpectedPayOSAmount(payment, data.getAmount())) {
+            return payos("04", "Invalid amount");
+        }
+        if (payment.getStatus() == PaymentStatus.COMPLETED
+                || pointTransactionRepository.existsByPaymentId(payment.getId())) {
+            return payos("02", "Order already confirmed");
+        }
+
+        payment.setResponseCode(blankToNull(data.getCode()));
+        payment.setGatewayTransactionNo(normalizeTransactionNo(data.getReference()));
+        payment.setBankCode(blankToNull(data.getCounterAccountBankName()));
+
+        boolean successful = Boolean.TRUE.equals(webhook.getSuccess())
+                && "00".equals(data.getCode());
+        if (!successful) {
+            if (payment.getStatus() == PaymentStatus.PENDING) {
+                payment.setStatus(PaymentStatus.FAILED);
+                notificationService.createNotification(
+                        payment.getUser(), null, "Top-up Failed",
+                        failureNotificationMessage(payment), "/dashboard/wallet");
+            }
+            return payos("00", "Webhook received");
+        }
+
+        if (payment.getStatus() != PaymentStatus.PENDING
+                && payment.getStatus() != PaymentStatus.EXPIRED) {
+            return payos("02", "Order already confirmed");
+        }
+
+        completePayment(
+                payment,
+                parsePayOSDate(data.getTransactionDateTime()),
+                "payOS deposit " + payment.getMerchantTransactionRef());
+        log.info("Confirmed payOS deposit {} and credited {} points to user {}",
+                payment.getMerchantTransactionRef(), payment.getPointsReceived(), payment.getUser().getId());
+        return payos("00", "Webhook received");
     }
 
     @Override
@@ -213,7 +279,7 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
             Pageable pageable) {
         User user = currentUserProvider.getCurrentUser();
         Page<Payment> page = paymentRepository.findPayments(
-                user.getId(), status, PaymentMethod.VNPAY, null, null, pageable);
+                user.getId(), status, null, null, null, pageable);
         return toPageResponse(
                 page.map(pointTransactionMapper::toPaymentSummary), pageable);
     }
@@ -272,6 +338,12 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         }
     }
 
+    private static boolean isExpectedPayOSAmount(Payment payment, Long callbackAmount) {
+        return payment.getAmount() != null
+                && callbackAmount != null
+                && payment.getAmount().compareTo(BigDecimal.valueOf(callbackAmount)) == 0;
+    }
+
     private static PaymentStatus toFailureStatus(String responseCode) {
         if ("24".equals(responseCode)) {
             return PaymentStatus.CANCELED;
@@ -301,6 +373,34 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
                 pointTransactionMapper.toPaymentSummary(payment));
     }
 
+    private void completePayment(Payment payment, LocalDateTime paidAt, String description) {
+        User user = userRepository.findByIdForUpdate(payment.getUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        long currentPoints = user.getPoints() == null ? 0L : user.getPoints();
+        user.setPoints(Math.addExact(currentPoints, payment.getPointsReceived()));
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setPaidAt(paidAt);
+
+        pointTransactionRepository.save(
+                PointTransaction.builder()
+                        .user(user)
+                        .payment(payment)
+                        .points(payment.getPointsReceived())
+                        .transactionType(PointTransactionType.DEPOSIT)
+                        .description(description)
+                        .build());
+
+        notificationService.createNotification(
+                user,
+                null,
+                "Top-up Successful",
+                "Transaction " + payment.getMerchantTransactionRef()
+                        + " has added " + payment.getPointsReceived()
+                        + " points to your account",
+                "/dashboard/wallet");
+    }
+
     private static <T> PageResponse<T> toPageResponse(
             Page<T> page,
             Pageable pageable) {
@@ -326,6 +426,27 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         }
     }
 
+    private static LocalDateTime parsePayOSDate(String transactionDateTime) {
+        if (!StringUtils.hasText(transactionDateTime)) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(transactionDateTime,
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (DateTimeParseException ignored) {
+            try {
+                return OffsetDateTime.parse(transactionDateTime).toLocalDateTime();
+            } catch (DateTimeParseException ignoredAgain) {
+                try {
+                    return LocalDateTime.ofInstant(Instant.parse(transactionDateTime), VNPAY_ZONE);
+                } catch (DateTimeParseException ignoredLast) {
+                    log.warn("payOS webhook contains invalid transactionDateTime: {}", transactionDateTime);
+                    return null;
+                }
+            }
+        }
+    }
+
     private String normalizeTransactionNo(String txnNo) {
         if (!StringUtils.hasText(txnNo) || "0".equals(txnNo.trim())) {
             return null; // Trả về NULL để DB không bị tính trùng lặp Unique
@@ -343,6 +464,29 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
         return "DEP" + timestamp + randomPart;
     }
 
+    private static String newPayOSOrderCode() {
+        long epochMillis = Math.multiplyExact(Instant.now().getEpochSecond(), 1_000L);
+        long randomPart = ThreadLocalRandom.current().nextLong(100L, 1_000L);
+        return String.valueOf(epochMillis + randomPart);
+    }
+
+    private PaymentGatewayStrategy findStrategy(PaymentMethod method) {
+        if (paymentGatewayStrategies == null || method == null) {
+            return null;
+        }
+        return paymentGatewayStrategies.stream()
+                .filter(strategy -> strategy != null && strategy.paymentMethod() == method)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private WebhookPaymentGatewayStrategy findWebhookStrategy(PaymentMethod method) {
+        PaymentGatewayStrategy strategy = findStrategy(method);
+        return strategy instanceof WebhookPaymentGatewayStrategy webhookStrategy
+                ? webhookStrategy
+                : null;
+    }
+
     private static String extractIpAddress(HttpServletRequest request) {
         String forwardedFor = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwardedFor)) {
@@ -358,5 +502,9 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
 
     private static VNPayIpnResponse ipn(String code, String message) {
         return new VNPayIpnResponse(code, message);
+    }
+
+    private static PayOSWebhookResponse payos(String code, String message) {
+        return new PayOSWebhookResponse(code, message);
     }
 }

@@ -73,12 +73,15 @@ aws:
 payment:
   vnpay:
     pay-url: https://sandbox.vnpay.vn/paymentv2/vpcpay.html
-    return-url: http://localhost/api/v1/payments/vnpay/return
+    return-url: http://localhost/api/v1/payment-callbacks/vnpay/return
     frontend-return-url: http://localhost/payment-result
     tmn-code: TESTCODE
     hash-secret: test-hash-secret
     amount-per-point: 1000
     expire-minutes: 15
+  payos:
+    return-url: http://localhost:5173/payment-result
+    cancel-url: http://localhost:5173/payment-result
 
 jobs:
   payment-expiration.enabled: false

@@ -35,7 +35,7 @@ public class VNPayUtil {
         params.put("vnp_Amount", toVNPayAmount(payment.getAmount()));
         params.put("vnp_CurrCode", "VND");
         params.put("vnp_TxnRef", payment.getMerchantTransactionRef());
-        params.put("vnp_OrderInfo", "Nap point LearningHub "
+        params.put("vnp_OrderInfo", "Point deposit LearningHub "
                 + payment.getMerchantTransactionRef());
         params.put("vnp_OrderType", properties.getOrderType());
         params.put("vnp_Locale", properties.getLocale());

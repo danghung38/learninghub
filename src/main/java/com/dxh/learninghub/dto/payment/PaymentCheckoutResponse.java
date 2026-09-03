@@ -1,9 +1,9 @@
-package com.dxh.learninghub.dto.response;
+package com.dxh.learninghub.dto.payment;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record VNPayPaymentResponse(
+public record PaymentCheckoutResponse(
         String transactionRef,
         BigDecimal amount,
         Long points,

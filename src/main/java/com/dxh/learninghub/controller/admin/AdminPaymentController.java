@@ -5,11 +5,13 @@ import com.dxh.learninghub.dto.response.PageResponse;
 import com.dxh.learninghub.dto.response.admin.AdminPaymentResponse;
 import com.dxh.learninghub.enums.PaymentMethod;
 import com.dxh.learninghub.enums.PaymentStatus;
-import com.dxh.learninghub.service.interfac.VNPayPaymentService;
+import com.dxh.learninghub.service.interfac.PaymentService;
 import com.dxh.learninghub.utils.PageUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -24,10 +26,11 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/admin/payments")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Tag(name = "Admin Payments", description = "APIs for administrators to inspect payment records")
 public class AdminPaymentController {
 
-    private final VNPayPaymentService paymentService;
+    PaymentService paymentService;
 
     @Operation(summary = "Get all payments", description = "Filter and paginate payment records across all users")
     @GetMapping
