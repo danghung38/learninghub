@@ -28,6 +28,7 @@ public class SecurityConfig {
     static final String[] PUBLIC_POST_ENDPOINTS = {
             "/auth/login", "/auth/introspect", "/auth/logout", "/auth/refresh", "/users","/auth/login/google"
             ,"/users/reset-password","/users/verify-register","/users/forgot-password","/users/resend-verification"
+            ,"/payment-callbacks/payos/webhook"
     };
 
     static final String[] PUBLIC_GET_ENDPOINTS = {
@@ -41,8 +42,8 @@ public class SecurityConfig {
             "/courses/{courseId}/reviews",
             "/courses/{courseId}/rating-summary",
             "/certificates/verify/**",
-            "/payments/vnpay/ipn",
-            "/payments/vnpay/return",
+            "/payment-callbacks/vnpay/ipn",
+            "/payment-callbacks/vnpay/return",
             "/actuator/health",
             "/actuator/info",
             "/actuator/health/**"

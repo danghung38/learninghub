@@ -159,6 +159,7 @@ public enum ErrorCode {
 
     INVALID_DEPOSIT_AMOUNT(2500, "Deposit amount must be a positive multiple of 1,000 VND", HttpStatus.BAD_REQUEST),
     PAYMENT_NOT_EXISTED(2501, "Payment not existed", HttpStatus.NOT_FOUND),
+    PAYMENT_GATEWAY_ERROR(2502, "Payment gateway is temporarily unavailable", HttpStatus.BAD_GATEWAY),
 
     CERTIFICATE_NOT_EXISTED(2600, "Certificate not existed", HttpStatus.NOT_FOUND),
     COURSE_NOT_COMPLETED(2601, "Complete the course before requesting a certificate", HttpStatus.BAD_REQUEST),

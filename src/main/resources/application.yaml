@@ -146,3 +146,7 @@ payment:
     locale: vn
     amount-per-point: 1000
     expire-minutes: 15
+  payos:
+    # The payOS SDK reads credentials from PAYOS_CLIENT_ID, PAYOS_API_KEY and PAYOS_CHECKSUM_KEY.
+    return-url: ${PAYOS_RETURN_URL:http://localhost:5173/payment-result}
+    cancel-url: ${PAYOS_CANCEL_URL:http://localhost:5173/payment-result}

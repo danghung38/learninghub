@@ -18,7 +18,7 @@ Backend REST API cho nền tảng học trực tuyến LearningHub. Hệ thống
 - Tổ chức REST API theo layered architecture: controller → service → repository.
 - Xử lý authentication/authorization với nhiều role và permission.
 - Bảo đảm tính nhất quán khi cập nhật điểm, mua khóa học, thanh toán và rút tiền đồng thời.
-- Tích hợp MySQL, Redis, Amazon S3, VNPAY, Google OAuth2, WebSocket/STOMP và Brevo.
+- Tích hợp MySQL, Redis, Amazon S3, VNPAY, payOS, Google OAuth2, WebSocket/STOMP và Brevo.
 - Dùng DTO/mapper thay vì trả trực tiếp JPA Entity.
 
 ## Công nghệ
@@ -31,7 +31,7 @@ Backend REST API cho nền tảng học trực tuyến LearningHub. Hệ thống
 - Redis, Spring Cache, rate limiting và token blacklist
 - MapStruct, Lombok
 - AWS SDK for Java v2 (S3)
-- VNPAY Sandbox, Brevo Transactional Email
+- VNPAY Sandbox, payOS hosted checkout/webhook, Brevo Transactional Email
 - Thymeleaf, OpenHTMLtoPDF, Springdoc OpenAPI/Swagger
 
 ## Tính năng
@@ -58,8 +58,8 @@ Backend REST API cho nền tảng học trực tuyến LearningHub. Hệ thống
 ### Point, payment và withdrawal
 
 - Ví point và lịch sử point transaction.
-- Nạp point qua VNPAY Sandbox; tỷ lệ mặc định `1.000 VND = 1 point`.
-- Return URL/IPN callback, kiểm tra chữ ký và xử lý callback theo hướng idempotent.
+- Nạp point qua VNPAY Sandbox hoặc payOS; tỷ lệ mặc định `1.000 VND = 1 point`.
+- Return URL/IPN của VNPAY và webhook có chữ ký của payOS; callback được xác minh và xử lý idempotent.
 - Admin điều chỉnh/cộng/trừ/thưởng point.
 - Quản lý doanh thu, tài khoản ngân hàng và yêu cầu rút tiền của giảng viên.
 - Job tự cập nhật payment hết hạn và vô hiệu hóa advertisement hết hạn.
@@ -102,6 +102,7 @@ flowchart LR
     Service --> Redis[(Redis)]
     Service --> S3[(Amazon S3)]
     Service --> VNPAY[VNPAY Sandbox]
+    Service --> PayOS[payOS Checkout/Webhook]
     Service --> Brevo[Brevo Email]
 ```
 
@@ -219,11 +220,27 @@ S3_BASE_PREFIX=learninghub
 
 # VNPAY Sandbox
 VNPAY_PAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-VNPAY_RETURN_URL=http://localhost:8080/api/v1/payments/vnpay/return
+VNPAY_RETURN_URL=http://localhost:8080/api/v1/payment-callbacks/vnpay/return
 VNPAY_FRONTEND_RETURN_URL=http://localhost:5173/payment-result
 VNPAY_TMN_CODE=your-tmn-code
 VNPAY_HASH_SECRET=your-hash-secret
+
+# payOS (chỉ backend; không đưa các key này vào frontend)
+PAYOS_CLIENT_ID=your-client-id
+PAYOS_API_KEY=your-api-key
+PAYOS_CHECKSUM_KEY=your-checksum-key
+PAYOS_RETURN_URL=https://learninghub.id.vn/payment-result
+PAYOS_CANCEL_URL=https://learninghub.id.vn/payment-result
 ```
+
+Webhook payOS cấu hình trong merchant dashboard:
+
+```text
+https://api.learninghub.id.vn/api/v1/payment-callbacks/payos/webhook
+```
+
+Đây là endpoint server-to-server nên không yêu cầu JWT. `PAYOS_RETURN_URL` và
+`PAYOS_CANCEL_URL` là URL trình duyệt quay về frontend; chúng không thay thế webhook.
 
 ### Scheduled jobs
 
@@ -243,7 +260,7 @@ Các job được cấu hình trong `application.yaml` và chạy theo múi gi�
 - MySQL 8+
 - Redis 7+
 - Tài khoản/bucket Amazon S3
-- VNPAY Sandbox credentials
+- VNPAY Sandbox credentials hoặc payOS credentials
 - Brevo API key
 
 Khởi tạo database:
@@ -354,7 +371,12 @@ Ngoài REST API, `ChatWebSocketController` cung cấp 1 `@MessageMapping("/chat.
 | Course | GET | `/courses/teacher/{teacherId}` | Course theo giảng viên |
 | Enrollment | POST | `/enrollments/buy` | Mua course bằng point |
 | Progress | POST | `/lesson-progress/{lessonId}/complete` | Hoàn thành lesson |
-| Payment | POST | `/payments/vnpay/deposits` | Tạo yêu cầu nạp point |
+| Payment | POST | `/payments/deposits` | Tạo checkout nạp point; chọn cổng bằng `paymentMethod` (`VNPAY` hoặc `PAYOS`) |
+| Payment | GET | `/payments/deposits` | Xem lịch sử nạp point của người dùng hiện tại |
+| Payment | GET | `/payments/deposits/{transactionRef}` | Xem trạng thái một giao dịch của người dùng hiện tại |
+| Payment callback | GET | `/payment-callbacks/vnpay/ipn` | Nhận và xác minh VNPAY IPN |
+| Payment callback | GET | `/payment-callbacks/vnpay/return` | Xử lý VNPAY browser return |
+| Payment callback | POST | `/payment-callbacks/payos/webhook` | Nhận và xác minh webhook payOS |
 | Point | GET | `/users/me/points/transactions` | Lịch sử point transaction |
 | Certificate | GET | `/certificates/courses/{courseId}/download` | Tải certificate |
 | Certificate | GET | `/certificates/verify/{code}` | Xác minh certificate |
@@ -416,7 +438,8 @@ learninghub/
 │  │  └─ admin/                      # REST controller dành cho quản trị
 │  ├─ dto/
 │  │  ├─ request/                    # Request DTO và validation contract
-│  │  └─ response/                   # Response DTO/API response
+│  │  ├─ payment/                    # DTO callback/checkout của các cổng thanh toán
+│  │  └─ response/                   # Response DTO/API response dùng chung
 │  ├─ entity/                        # JPA entity và model persistence
 │  ├─ enums/                         # Enum trạng thái và nghiệp vụ
 │  ├─ exception/                     # ErrorCode, AppException, global handler
@@ -426,6 +449,7 @@ learninghub/
 │  │  └─ specification/              # CourseSpecification, UserSpecification
 │  ├─ service/
 │  │  ├─ interfac/                   # Service contract (tên thư mục hiện tại)
+│  │  │  └─ PaymentService.java      # Orchestration payment dùng chung VNPAY/payOS
 │  │  └─ impl/                       # Business logic và transaction boundary
 │  ├─ utils/
 │  │  └─ storage/                    # Tiện ích xử lý object key/storage
