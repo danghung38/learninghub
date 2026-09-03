@@ -294,7 +294,7 @@ public class PaymentServiceImpl implements PaymentService {
             notificationService.createNotification(
                     user,
                     null,
-                    "Top-up Canceled",
+                    "Top-up Failed",
                     failureNotificationMessage(payment),
                     "/dashboard/wallet");
         }
