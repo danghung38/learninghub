@@ -70,7 +70,7 @@ class VNPayPaymentServiceImplTest {
         when(vnPayUtil.buildPaymentUrl(any(Payment.class), eq("203.0.113.7"), any()))
                 .thenReturn("https://sandbox.vnpay.vn/pay");
         MockHttpServletRequest servletRequest = new MockHttpServletRequest();
-        servletRequest.addHeader("X-Forwarded-For", "203.0.113.7, 10.0.0.1");
+        servletRequest.setRemoteAddr("203.0.113.7");
 
         VNPayPaymentResponse response = service.createDeposit(
                 new CreateVNPayDepositRequest(100_000L), servletRequest);
