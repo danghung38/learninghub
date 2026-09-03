@@ -32,6 +32,9 @@ public interface PaymentService {
 
     PaymentSummaryResponse getPayment(String transactionRef);
 
+    /** Mark a pending payOS deposit as canceled after the provider's cancel redirect. */
+    void cancelPayOSPayment(String transactionRef);
+
     PageResponse<PaymentSummaryResponse> getMyPayments(
             PaymentStatus status,
             Pageable pageable);

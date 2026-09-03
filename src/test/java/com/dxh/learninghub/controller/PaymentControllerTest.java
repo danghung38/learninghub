@@ -91,4 +91,15 @@ class PaymentControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(ErrorCode.PAYMENT_NOT_EXISTED.getCode()));
     }
+
+    @Test
+    void cancelPayOSPayment_synchronizesCanceledCheckout() throws Exception {
+        mockMvc.perform(post("/payments/deposits/{transactionRef}/cancel", "1788439825436"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.message").value("Cancel payment successfully"));
+
+        org.mockito.Mockito.verify(paymentService)
+                .cancelPayOSPayment("1788439825436");
+    }
 }

@@ -145,6 +145,27 @@ class PaymentServiceImplTest {
         assertThat(transaction.getValue().getPayment()).isSameAs(payment);
     }
 
+    @Test
+    void cancelPayOSPayment_marksOnlyPendingOwnPaymentAsCanceled() {
+        User user = user(5L, 20L);
+        Payment payment = Payment.builder()
+                .user(user)
+                .merchantTransactionRef("1788439825436")
+                .paymentMethod(PaymentMethod.PAYOS)
+                .status(PaymentStatus.PENDING)
+                .build();
+        when(currentUserProvider.getCurrentUser()).thenReturn(user);
+        when(paymentRepository.findByTransactionRefForUpdate("1788439825436"))
+                .thenReturn(Optional.of(payment));
+
+        service.cancelPayOSPayment("1788439825436");
+
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELED);
+        assertThat(payment.getResponseCode()).isEqualTo("CANCELLED");
+        verify(notificationService).createNotification(
+                same(user), isNull(), eq("Top-up Canceled"), anyString(), eq("/dashboard/wallet"));
+    }
+
     private static Map<String, String> validIpnParams() {
         Map<String, String> params = new HashMap<>();
         params.put("vnp_SecureHash", "hash");

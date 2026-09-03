@@ -273,6 +273,34 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional
+    public void cancelPayOSPayment(String transactionRef) {
+        User user = currentUserProvider.getCurrentUser();
+        Payment payment = paymentRepository
+                .findByTransactionRefForUpdate(transactionRef)
+                .orElseThrow(() -> new AppException(ErrorCode.PAYMENT_NOT_EXISTED));
+
+        if (payment.getUser() == null
+                || !user.getId().equals(payment.getUser().getId())
+                || payment.getPaymentMethod() != PaymentMethod.PAYOS) {
+            throw new AppException(ErrorCode.PAYMENT_NOT_EXISTED);
+        }
+
+        // payOS sends cancelUrl in the browser; cancellation is non-financial,
+        // so it is safe to synchronize a still-pending local payment here.
+        if (payment.getStatus() == PaymentStatus.PENDING) {
+            payment.setStatus(PaymentStatus.CANCELED);
+            payment.setResponseCode("CANCELLED");
+            notificationService.createNotification(
+                    user,
+                    null,
+                    "Top-up Canceled",
+                    failureNotificationMessage(payment),
+                    "/dashboard/wallet");
+        }
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<PaymentSummaryResponse> getMyPayments(
             PaymentStatus status,
