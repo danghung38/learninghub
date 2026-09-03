@@ -24,6 +24,7 @@ import com.dxh.learninghub.service.interfac.NotificationService;
 import com.dxh.learninghub.service.interfac.VNPayPaymentService;
 import com.dxh.learninghub.utils.CurrentUserProvider;
 import com.dxh.learninghub.utils.VNPayUtil;
+import com.dxh.learninghub.utils.IpUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -344,12 +345,7 @@ public class VNPayPaymentServiceImpl implements VNPayPaymentService {
     }
 
     private static String extractIpAddress(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwardedFor)) {
-            return forwardedFor.split(",", 2)[0].trim();
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        return StringUtils.hasText(realIp) ? realIp.trim() : request.getRemoteAddr();
+        return IpUtil.getClientIp(request);
     }
 
     private static String blankToNull(String value) {

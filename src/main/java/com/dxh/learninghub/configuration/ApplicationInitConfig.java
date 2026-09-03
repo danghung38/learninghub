@@ -53,7 +53,7 @@ public class ApplicationInitConfig {
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository,PasswordEncoder passwordEncoder){
         return args -> {
-            if (userRepository.findByUsername("admin").isEmpty()){
+            if (userRepository.findByUsername(adminUsername).isEmpty()){
                 Role adminRole = roleRepository.findByName(RoleEnum.ADMIN.name())
                         .orElseGet(() -> roleRepository.save(
                                 Role.builder()
