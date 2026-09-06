@@ -23,6 +23,9 @@ public record LessonRequest(
     @Size(max = 255, message = "CONTENT_TOO_LONG")
     String contentUrl,
 
+    @NotBlank(message = "INVALID_BLANK")
+    String contentScript,
+
     @Size(max = 255, message = "CONTENT_TOO_LONG")
     String description
 ) {}
