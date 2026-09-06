@@ -29,6 +29,9 @@ public class Lesson extends AbstractEntity<Long> {
     @Column(name = "content_url", nullable = false)
     String contentUrl;
 
+    @Column(name = "content_script", columnDefinition = "LONGTEXT")
+    String contentScript;
+
     @Column(name = "description")
     String description; // Mô tả nội dung nếu cần
 }

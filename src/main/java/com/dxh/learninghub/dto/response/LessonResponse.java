@@ -17,5 +17,7 @@ public record LessonResponse(
 
     String contentUrl,
 
-    String description
+    String description,
+
+    String contentScript
 ) {}

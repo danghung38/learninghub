@@ -2,6 +2,7 @@ package com.dxh.learninghub.dto.request;
 
 import com.dxh.learninghub.enums.LessonContentType;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
@@ -12,6 +13,8 @@ public record LessonUpdateRequest(
 
         @Size(min = 1, message = "INVALID_BLANK")
         String lessonName,
+
+        String contentScript,
 
         LessonContentType contentType,
 
