@@ -218,7 +218,7 @@ class PaymentServiceImplTest {
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.CANCELED);
         assertThat(payment.getResponseCode()).isEqualTo("CANCELLED");
         verify(notificationService).createNotification(
-                same(user), isNull(), eq("Top-up Canceled"), anyString(), eq("/dashboard/wallet"));
+                same(user), isNull(), eq("Top-up Failed"), anyString(), eq("/dashboard/wallet"));
     }
 
     private static Map<String, String> validIpnParams() {
