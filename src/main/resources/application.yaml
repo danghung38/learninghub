@@ -34,6 +34,7 @@ spring:
     baseline-version: 1
     validate-on-migrate: true
     clean-disabled: true
+    repair-on-migrate: true
 
   data:
     redis:

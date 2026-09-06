@@ -1,2 +1,2 @@
 ALTER TABLE lessons
-    MODIFY COLUMN content_script LONGTEXT;
+    ADD COLUMN content_script LONGTEXT NULL;
