@@ -1,8 +1,7 @@
 package com.dxh.learninghub.mapper;
 
 
-import com.dxh.learninghub.dto.request.CourseUploadRequest;
-import com.dxh.learninghub.dto.request.CourseUpdateRequest;
+import com.dxh.learninghub.dto.request.*;
 import com.dxh.learninghub.dto.response.*;
 import com.dxh.learninghub.entity.Chapter;
 import com.dxh.learninghub.entity.Course;
@@ -66,4 +65,14 @@ public interface CourseMapper {
     @Mapping(source = "chapter.id", target = "chapterId")
     @Mapping(source = "contentUrl", target = "contentUrl", qualifiedByName = "generateLessonViewUrl")
     LessonResponse lessonToManagementPreviewResponse(Lesson lesson);
+
+    // --- AI RAG Mapping Methods ---
+    @Mapping(source = "author.fullName", target = "teacherName")
+    @Mapping(source = "chapters", target = "chapters")
+    CourseAIRequest courseToCourseAIRequest(Course course);
+
+    @Mapping(source = "lessons", target = "lessons")
+    ChapterAIRequest chapterToChapterAIRequest(Chapter chapter);
+
+    LessonAIRequest lessonToLessonAIRequest(Lesson lesson);
 }

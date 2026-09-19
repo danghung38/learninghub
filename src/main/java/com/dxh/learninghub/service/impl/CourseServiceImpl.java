@@ -2,6 +2,7 @@ package com.dxh.learninghub.service.impl;
 
 
 import com.dxh.learninghub.constant.CacheNames;
+import com.dxh.learninghub.dto.request.CourseAIRequest;
 import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.request.CourseUploadRequest;
 import com.dxh.learninghub.dto.request.CourseUpdateRequest;
@@ -278,6 +279,15 @@ public class CourseServiceImpl implements CourseService {
                 .totalElements(courses.getTotalElements())
                 .items(courses.stream().map(courseMapper::courseToCourseResponse).toList())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN')")
+    public CourseAIRequest getCourseAIPreview(Long courseId) {
+        Course course = courseRepository.findWithChaptersAndLessonsById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_EXISTED));
+        return courseMapper.courseToCourseAIRequest(course);
     }
 
     private Course getManagedCourse(Long courseId) {
