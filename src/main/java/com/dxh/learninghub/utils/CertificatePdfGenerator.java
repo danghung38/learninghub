@@ -35,7 +35,7 @@ public class CertificatePdfGenerator {
             context.setVariable("author", author);
             context.setVariable("issueDate", DATE_FORMAT.format(issueDate));
             context.setVariable("verificationCode", verificationCode);
-            context.setVariable("verificationPath", "/api/v1/certificates/verify/" + verificationCode);
+            context.setVariable("verificationPath", "learninghub.id.vn/certificates/verify");
 
             PdfRendererBuilder builder = new PdfRendererBuilder();
 
