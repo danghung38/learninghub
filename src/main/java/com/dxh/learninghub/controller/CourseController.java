@@ -1,9 +1,6 @@
 package com.dxh.learninghub.controller;
 
-import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
-import com.dxh.learninghub.dto.request.CourseUploadRequest;
-import com.dxh.learninghub.dto.request.CourseUpdateRequest;
-import com.dxh.learninghub.dto.request.PresignedUploadRequest;
+import com.dxh.learninghub.dto.request.*;
 import com.dxh.learninghub.dto.response.*;
 import com.dxh.learninghub.service.AwsS3Service;
 import com.dxh.learninghub.service.interfac.CourseService;
@@ -199,6 +196,19 @@ public class CourseController {
         return ApiResponse.<Void>builder()
                 .code(HttpStatus.OK.value())
                 .message("Soft-delete course successfully")
+                .build();
+    }
+
+    @Operation(
+            summary = "Get course preview for AI RAG",
+            description = "Allow an administrator to preview full course hierarchy formatted for AI RAG ingestion"
+    )
+    @GetMapping("/{courseId}/ai-preview")
+    public ApiResponse<CourseAIRequest> courseAIPreview(@PathVariable Long courseId) {
+        return ApiResponse.<CourseAIRequest>builder()
+                .code(HttpStatus.OK.value())
+                .message("Get course AI preview successfully")
+                .result(courseService.getCourseAIPreview(courseId))
                 .build();
     }
 

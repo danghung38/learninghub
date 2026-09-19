@@ -1,5 +1,6 @@
 package com.dxh.learninghub.service.interfac;
 
+import com.dxh.learninghub.dto.request.CourseAIRequest;
 import com.dxh.learninghub.dto.request.CourseSearchFilterRequest;
 import com.dxh.learninghub.dto.request.CourseUpdateRequest;
 import com.dxh.learninghub.dto.request.CourseUploadRequest;
@@ -32,4 +33,6 @@ public interface CourseService {
     PageResponse<CourseResponse> searchCourses(Pageable pageable, CourseSearchFilterRequest filter);
 
     PageResponse<CourseResponse> getCoursesByTeacher(Long teacherId, Pageable pageable);
+
+    CourseAIRequest getCourseAIPreview(Long courseId);
 }
