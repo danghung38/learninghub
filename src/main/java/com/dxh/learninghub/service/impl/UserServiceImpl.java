@@ -222,13 +222,20 @@ public class UserServiceImpl implements UserService {
         userMapper.updateUserFromRequest(request, user);
 
         String oldAvatar = user.getAvatar();
-        if (file != null && !file.isEmpty()) {
+        boolean avatarReplaced = file != null && !file.isEmpty();
+        if (avatarReplaced) {
             user.setAvatar(awsS3Service.uploadFile(file, "avatars/" + user.getId(), UploadPolicy.AVATAR));
         }
 
         UserUpdateResponse response = userMapper.toUserUpdateResponse(userRepository.save(user));
 
-        if (oldAvatar != null && !oldAvatar.isBlank()) {
+        // Do not delete the current avatar for profile-only updates. The old
+        // object is removed only after a genuinely new avatar was uploaded
+        // and the database transaction committed successfully.
+        if (avatarReplaced
+                && oldAvatar != null
+                && !oldAvatar.isBlank()
+                && !oldAvatar.equals(user.getAvatar())) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
