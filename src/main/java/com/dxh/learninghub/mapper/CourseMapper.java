@@ -67,12 +67,19 @@ public interface CourseMapper {
     LessonResponse lessonToManagementPreviewResponse(Lesson lesson);
 
     // --- AI RAG Mapping Methods ---
-    @Mapping(source = "author.fullName", target = "teacherName")
+    @Mapping(source = "author", target = "teacher")
     @Mapping(source = "chapters", target = "chapters")
     CourseAIRequest courseToCourseAIRequest(Course course);
 
     @Mapping(source = "lessons", target = "lessons")
     ChapterAIRequest chapterToChapterAIRequest(Chapter chapter);
 
+    @Mapping(source = "contentScript", target = "transcript")
     LessonAIRequest lessonToLessonAIRequest(Lesson lesson);
+
+    @Mapping(
+            target = "yearsOfExperience",
+            expression = "java(user.getYearsOfExperience() == null "
+                    + "? null : user.getYearsOfExperience().intValue())")
+    TeacherAIRequest userToTeacherAIRequest(User user);
 }

@@ -6,6 +6,12 @@ import java.util.List;
 
 @Builder
 public record ChapterAIRequest(
-    String chapterName,
-    List<LessonAIRequest> lessons
-) {}
+        Long id,
+
+        String chapterName,
+
+        String description,
+
+        List<LessonAIRequest> lessons
+) {
+}
