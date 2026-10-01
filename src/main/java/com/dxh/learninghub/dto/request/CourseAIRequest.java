@@ -10,8 +10,6 @@ import java.util.List;
 public record CourseAIRequest(
         Long id,
 
-        Integer version,
-
         TeacherAIRequest teacher,
 
         String title,
