@@ -1,27 +1,31 @@
 package com.dxh.learninghub.dto.request;
 
 import com.dxh.learninghub.enums.CourseLevel;
+import com.dxh.learninghub.enums.CourseStatus;
 import lombok.Builder;
 
 import java.util.List;
 
 @Builder
 public record CourseAIRequest(
-    Long id,
+        Long id,
 
-    String teacherName,
+        Integer version,
 
-    String title,
+        TeacherAIRequest teacher,
 
-    String description,
+        String title,
 
-    Long points,
+        String description,
 
-    Integer duration,
+        String language,
 
-    String language,
+        Long points,
 
-    CourseLevel courseLevel,
+        CourseLevel courseLevel,
 
-    List<ChapterAIRequest> chapters
-) {}
+        CourseStatus status,
+
+        List<ChapterAIRequest> chapters
+) {
+}
