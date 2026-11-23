@@ -36,6 +36,8 @@ import java.util.function.Consumer;
 public class AwsS3Service {
 
     private static final int MAX_DELETE_BATCH_SIZE = 1000;
+    private static final Set<String> VIDEO_EXTENSIONS = Set.of(
+            "mp4", "webm", "mkv", "mov", "m4v", "avi");
 
     @Value("${aws.s3.access-key}") private String accessKey;
     @Value("${aws.s3.secret-key}") private String secretKey;
@@ -105,9 +107,16 @@ public class AwsS3Service {
                 .build();
     }
 
-    // --- Read / Presigned GET URLs ---
+    // --- Read URLs ---
     @Named("resolveFileUrl")
     public String resolveFileUrl(String rawUrlOrKey) {
+        if (rawUrlOrKey == null || rawUrlOrKey.isBlank()) return null;
+        String value = rawUrlOrKey.trim();
+        return value.startsWith("http") ? value : getPermanentObjectUrl(normalizeObjectKey(value));
+    }
+
+    @Named("resolveVideoUrl")
+    public String resolveVideoUrl(String rawUrlOrKey) {
         if (rawUrlOrKey == null || rawUrlOrKey.isBlank()) return null;
         String value = rawUrlOrKey.trim();
         return value.startsWith("http") ? value : generateViewUrl(normalizeObjectKey(value));
@@ -121,7 +130,14 @@ public class AwsS3Service {
     @Named("generateLessonViewUrl")
     public String generateLessonViewUrl(String rawUrlOrKey) {
         if (rawUrlOrKey == null || rawUrlOrKey.isBlank()) return null;
+        String value = rawUrlOrKey.trim();
+        if (value.startsWith("http")) return value;
+
         String objectKey = normalizeObjectKey(rawUrlOrKey);
+        if (!isVideoObject(objectKey)) {
+            return getPermanentObjectUrl(objectKey);
+        }
+
         String contentType = resolveLessonContentType(objectKey);
 
         return getPresignedGetUrl(objectKey, Duration.ofHours(1), builder -> {
@@ -145,6 +161,27 @@ public class AwsS3Service {
                 .build();
 
         return s3Presigner.presignGetObject(presignRequest).url().toString();
+    }
+
+    private String getPermanentObjectUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) return null;
+        return s3Client.utilities()
+                .getUrl(request -> request.bucket(bucketName).key(objectKey))
+                .toExternalForm();
+    }
+
+    private boolean isVideoObject(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) return false;
+
+        String path = objectKey.toLowerCase(Locale.ROOT);
+        int queryIndex = path.indexOf('?');
+        if (queryIndex >= 0) path = path.substring(0, queryIndex);
+        int fragmentIndex = path.indexOf('#');
+        if (fragmentIndex >= 0) path = path.substring(0, fragmentIndex);
+        int extensionIndex = path.lastIndexOf('.');
+
+        return extensionIndex >= 0
+                && VIDEO_EXTENSIONS.contains(path.substring(extensionIndex + 1));
     }
 
     // --- Deletion & Querying ---

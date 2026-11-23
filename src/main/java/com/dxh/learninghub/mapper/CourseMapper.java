@@ -16,7 +16,7 @@ public interface CourseMapper {
     @Mapping(target = "author", source = "author.fullName")
     @Mapping(target = "authorId", source = "author.id")
     @Mapping(source = "thumbnail", target = "thumbnail", qualifiedByName = "resolveFileUrl")
-    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveFileUrl")
+    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveVideoUrl")
     CourseResponse courseToCourseResponse(Course course);
 
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -25,7 +25,7 @@ public interface CourseMapper {
 
     @Mapping(target = "author", source = "author.fullName")
     @Mapping(source = "thumbnail", target = "thumbnail", qualifiedByName = "resolveFileUrl")
-    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveFileUrl")
+    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveVideoUrl")
     CourseUploadResponse courseToCourseUploadResponse(Course course);
 
     @BeanMapping(
@@ -38,7 +38,7 @@ public interface CourseMapper {
 
     @Mapping(source = "author", target = "teacher")
     @Mapping(source = "thumbnail", target = "thumbnail", qualifiedByName = "resolveFileUrl")
-    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveFileUrl")
+    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveVideoUrl")
     CoursePreviewResponse courseToCoursePreviewResponse(Course course);
 
     @Mapping(source = "id", target = "id")
@@ -57,7 +57,7 @@ public interface CourseMapper {
     @Mapping(source = "author.id", target = "authorId")
     @Mapping(source = "author.fullName", target = "authorName")
     @Mapping(source = "thumbnail", target = "thumbnail", qualifiedByName = "resolveFileUrl")
-    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveFileUrl")
+    @Mapping(source = "videoUrl", target = "videoUrl", qualifiedByName = "resolveVideoUrl")
     CourseManagementPreviewResponse courseToManagementPreviewResponse(Course course);
 
     ChapterManagementPreviewResponse chapterToManagementPreviewResponse(Chapter chapter);
