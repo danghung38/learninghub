@@ -9,6 +9,8 @@ public record LessonAIRequest(
 
         String lessonName,
 
+        Integer lessonOrder,
+
         LessonContentType contentType,
 
         String transcript

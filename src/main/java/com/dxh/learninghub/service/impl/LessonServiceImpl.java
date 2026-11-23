@@ -2,6 +2,7 @@ package com.dxh.learninghub.service.impl;
 
 import com.dxh.learninghub.constant.CacheNames;
 import com.dxh.learninghub.dto.request.LessonRequest;
+import com.dxh.learninghub.dto.request.LessonReorderRequest;
 import com.dxh.learninghub.dto.request.LessonUpdateRequest;
 import com.dxh.learninghub.dto.response.LessonResponse;
 import com.dxh.learninghub.entity.Chapter;
@@ -33,7 +34,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -62,13 +67,17 @@ public class LessonServiceImpl implements LessonService {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public LessonResponse createLesson(LessonRequest request) {
-        Chapter chapter = getChapterAndValidateOwner(request.chapterId());
+        Chapter chapter = getChapterAndValidateOwnerForUpdate(request.chapterId());
         markAsDraft(chapter.getCourse());
 
         Lesson lesson = lessonMapper.lessonRequestToLesson(request);
         lesson.setChapter(chapter);
-
         lesson.setContentUrl(awsS3Service.normalizeObjectKey(request.contentUrl()));
+
+        List<Lesson> orderedLessons = getOrderedLessons(chapter);
+        int desiredOrder = normalizeOrder(request.lessonOrder(), orderedLessons.size() + 1);
+        orderedLessons.add(desiredOrder - 1, lesson);
+        renumberLessons(orderedLessons);
 
         lessonRepository.saveAndFlush(lesson);
         learningProgressService.synchronizeCourse(chapter.getCourse().getId());
@@ -87,25 +96,40 @@ public class LessonServiceImpl implements LessonService {
     public LessonResponse updateLesson(Long id, LessonUpdateRequest request) {
 
         Lesson lesson = getLessonOrThrow(id);
+        Long sourceChapterId = lesson.getChapter().getId();
+        Long targetChapterId = request.chapterId() == null ? sourceChapterId : request.chapterId();
+        Map<Long, Chapter> lockedChapters = lockChaptersAndValidateOwner(sourceChapterId, targetChapterId);
+        Chapter sourceChapter = lockedChapters.get(sourceChapterId);
+        Chapter targetChapter = lockedChapters.get(targetChapterId);
 
-        validateOwner(lesson.getChapter());
-
-        if (request.chapterId() != null
-                && !Objects.equals(lesson.getChapter().getId(), request.chapterId())) {
-            Chapter targetChapter = getChapterAndValidateOwner(request.chapterId());
-            Long currentCourseId = lesson.getChapter().getCourse().getId();
-            Long targetCourseId = targetChapter.getCourse().getId();
-
-            if (!Objects.equals(currentCourseId, targetCourseId)) {
-                throw new AppException(ErrorCode.LESSON_CROSS_COURSE_MOVE_NOT_ALLOWED);
-            }
-            lesson.setChapter(targetChapter);
+        if (!Objects.equals(sourceChapter.getCourse().getId(), targetChapter.getCourse().getId())) {
+            throw new AppException(ErrorCode.LESSON_CROSS_COURSE_MOVE_NOT_ALLOWED);
         }
-        markAsDraft(lesson.getChapter().getCourse());
+        markAsDraft(targetChapter.getCourse());
 
         String oldObjectKey = awsS3Service.normalizeObjectKey(lesson.getContentUrl());
         lessonMapper.updateLessonFromRequest(request, lesson);
-        lessonRepository.save(lesson);
+
+        List<Lesson> sourceLessons = getOrderedLessons(sourceChapter);
+        int currentOrder = findLessonOrder(sourceLessons, lesson.getId());
+        sourceLessons.removeIf(item -> Objects.equals(item.getId(), lesson.getId()));
+
+        if (Objects.equals(sourceChapterId, targetChapterId)) {
+            int desiredOrder = request.lessonOrder() == null
+                    ? normalizeOrder(currentOrder, sourceLessons.size() + 1)
+                    : normalizeOrder(request.lessonOrder(), sourceLessons.size() + 1);
+            sourceLessons.add(desiredOrder - 1, lesson);
+            renumberLessons(sourceLessons);
+        } else {
+            renumberLessons(sourceLessons);
+            List<Lesson> targetLessons = getOrderedLessons(targetChapter);
+            int desiredOrder = normalizeOrder(request.lessonOrder(), targetLessons.size() + 1);
+            lesson.setChapter(targetChapter);
+            targetLessons.add(desiredOrder - 1, lesson);
+            renumberLessons(targetLessons);
+        }
+
+        lessonRepository.saveAndFlush(lesson);
 
         if (oldObjectKey != null
                 && !Objects.equals(oldObjectKey, lesson.getContentUrl())) {
@@ -123,17 +147,57 @@ public class LessonServiceImpl implements LessonService {
             @CacheEvict(cacheNames = CacheNames.COURSE_TITLE, allEntries = true)
     })
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
+    public List<LessonResponse> reorderLessons(LessonReorderRequest request) {
+        Chapter chapter = getChapterAndValidateOwnerForUpdate(request.chapterId());
+        List<Lesson> currentLessons = getOrderedLessons(chapter);
+        List<Long> requestedIds = request.lessonIds();
+
+        if (requestedIds.size() != currentLessons.size()
+                || new HashSet<>(requestedIds).size() != requestedIds.size()) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        Map<Long, Lesson> lessonsById = new LinkedHashMap<>();
+        currentLessons.forEach(lesson -> lessonsById.put(lesson.getId(), lesson));
+
+        List<Lesson> reorderedLessons = new ArrayList<>(requestedIds.size());
+        for (Long lessonId : requestedIds) {
+            Lesson lesson = lessonsById.get(lessonId);
+            if (lesson == null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+            reorderedLessons.add(lesson);
+        }
+
+        renumberLessons(reorderedLessons);
+        markAsDraft(chapter.getCourse());
+        lessonRepository.flush();
+
+        return reorderedLessons.stream()
+                .map(lessonMapper::lessonToLessonResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = CacheNames.COURSES, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.COURSE_LIST, allEntries = true),
+            @CacheEvict(cacheNames = CacheNames.COURSE_TITLE, allEntries = true)
+    })
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public void deleteLesson(Long id) {
         Lesson lesson = getLessonOrThrow(id);
-
-        Long courseId = lesson.getChapter().getCourse().getId();
-
-        validateOwner(lesson.getChapter());
-        markAsDraft(lesson.getChapter().getCourse());
+        Chapter chapter = getChapterAndValidateOwnerForUpdate(lesson.getChapter().getId());
+        Long courseId = chapter.getCourse().getId();
+        markAsDraft(chapter.getCourse());
 
         String objectKey = lesson.getContentUrl();
         lessonProgressRepository.deleteAllByLessonId(lesson.getId());
         lessonRepository.delete(lesson);
+        List<Lesson> remainingLessons = getOrderedLessons(chapter);
+        remainingLessons.removeIf(item -> Objects.equals(item.getId(), lesson.getId()));
+        renumberLessons(remainingLessons);
         lessonRepository.flush();
         learningProgressService.synchronizeCourse(courseId);
         deleteLessonFileAfterCommit(objectKey);
@@ -157,7 +221,7 @@ public class LessonServiceImpl implements LessonService {
 
         validateLessonAccess(chapter.getCourse());
 
-        return lessonRepository.findByChapterOrderByIdAsc(chapter).stream()
+        return lessonRepository.findByChapterOrderByLessonOrderAscIdAsc(chapter).stream()
                 .map(lessonMapper::lessonToLessonResponse)
                 .toList();
     }
@@ -167,13 +231,50 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new AppException(ErrorCode.LESSON_NOT_EXISTED));
     }
 
-    private Chapter getChapterAndValidateOwner(Long chapterId) {
-        Chapter chapter = chapterRepository.findWithCourseAndAuthorById(chapterId)
+    private Chapter getChapterAndValidateOwnerForUpdate(Long chapterId) {
+        Chapter chapter = chapterRepository.findWithCourseAndAuthorByIdForUpdate(chapterId)
                 .orElseThrow(() -> new AppException(ErrorCode.CHAPTER_NOT_EXISTED));
-
         validateOwner(chapter);
-
         return chapter;
+    }
+
+    private Map<Long, Chapter> lockChaptersAndValidateOwner(Long firstChapterId, Long secondChapterId) {
+        List<Long> chapterIds = List.of(firstChapterId, secondChapterId).stream()
+                .distinct()
+                .sorted()
+                .toList();
+        Map<Long, Chapter> chapters = new LinkedHashMap<>();
+        chapterIds.forEach(chapterId -> {
+            Chapter chapter = getChapterAndValidateOwnerForUpdate(chapterId);
+            chapters.put(chapterId, chapter);
+        });
+        return chapters;
+    }
+
+    private List<Lesson> getOrderedLessons(Chapter chapter) {
+        return new ArrayList<>(lessonRepository.findByChapterOrderByLessonOrderAscIdAsc(chapter));
+    }
+
+    private int normalizeOrder(Integer requestedOrder, int maximumOrder) {
+        if (requestedOrder == null) {
+            return maximumOrder;
+        }
+        return Math.max(1, Math.min(requestedOrder, maximumOrder));
+    }
+
+    private int findLessonOrder(List<Lesson> lessons, Long lessonId) {
+        for (int index = 0; index < lessons.size(); index++) {
+            if (Objects.equals(lessons.get(index).getId(), lessonId)) {
+                return index + 1;
+            }
+        }
+        throw new AppException(ErrorCode.LESSON_NOT_EXISTED);
+    }
+
+    private void renumberLessons(List<Lesson> lessons) {
+        for (int index = 0; index < lessons.size(); index++) {
+            lessons.get(index).setLessonOrder(index + 1);
+        }
     }
 
     private void validateOwner(Chapter chapter) {

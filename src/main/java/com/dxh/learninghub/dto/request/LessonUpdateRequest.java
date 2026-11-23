@@ -14,6 +14,9 @@ public record LessonUpdateRequest(
         @Size(min = 1, message = "INVALID_BLANK")
         String lessonName,
 
+        @Min(value = 1, message = "MIN_INVALID")
+        Integer lessonOrder,
+
         String contentScript,
 
         LessonContentType contentType,

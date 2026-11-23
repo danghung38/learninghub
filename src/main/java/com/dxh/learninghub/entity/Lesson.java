@@ -22,6 +22,9 @@ public class Lesson extends AbstractEntity<Long> {
     @JoinColumn(name = "chapter_id", nullable = false)
     Chapter chapter;
 
+    @Column(name = "lesson_order", nullable = false)
+    Integer lessonOrder;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "content_type", nullable = false)
     LessonContentType contentType;

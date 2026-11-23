@@ -22,7 +22,7 @@ public class Chapter extends AbstractEntity<Long> {
     Course course;
 
     @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @OrderBy("id ASC")
+    @OrderBy("lessonOrder ASC, id ASC")
     @Builder.Default
     Set<Lesson> lessons = new LinkedHashSet<>();
 

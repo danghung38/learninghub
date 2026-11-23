@@ -9,6 +9,8 @@ public record LessonPreviewResponse(
 
     String lessonName,
 
+    Integer lessonOrder,
+
     LessonContentType contentType,
 
     String description
