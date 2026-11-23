@@ -45,13 +45,4 @@ public class PermissionController {
                 .build();
     }
 
-    @Operation(summary = "Delete a permission", description = "Delete a permission by name")
-    @DeleteMapping("/{permission}")
-    ApiResponse<Void> delete(@PathVariable String permission){
-        permissionService.delete(permission);
-        return ApiResponse.<Void>builder()
-                .code(HttpStatus.OK.value())
-                .message("Delete permission successfully")
-                .build();
-    }
 }

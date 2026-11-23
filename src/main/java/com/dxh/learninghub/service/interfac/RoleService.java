@@ -10,5 +10,4 @@ public interface RoleService {
 
     List<RoleResponse> getAll();
 
-    void delete(Long role);
 }

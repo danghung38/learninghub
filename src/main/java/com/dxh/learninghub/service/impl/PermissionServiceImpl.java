@@ -40,9 +40,4 @@ public class PermissionServiceImpl implements PermissionService {
         return permissions.stream().map(permissionMapper::toPermissionResponse).toList();
     }
 
-    @Override
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public void delete(String permission){
-        permissionRepository.deleteById(permission);
-    }
 }
