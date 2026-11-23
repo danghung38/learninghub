@@ -2,6 +2,7 @@ package com.dxh.learninghub.service;
 
 import com.dxh.learninghub.dto.request.AuthenticationRequest;
 import com.dxh.learninghub.dto.request.ChangePasswordRequest;
+import com.dxh.learninghub.dto.request.MobileAuthenticationRequest;
 import com.dxh.learninghub.dto.response.AuthenticationResponse;
 import com.dxh.learninghub.entity.Role;
 import com.dxh.learninghub.entity.User;
@@ -64,6 +65,25 @@ class AuthenticationServiceImplTest {
         assertThat(user.getLastLogin()).isNotNull();
         verify(loginAttemptService).loginSucceeded("student", "127.0.0.1");
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void mobileLogin_skipsTurnstileAndKeepsCredentialProtection() {
+        User user = activeUser();
+        when(userRepository.findByUsernameOrEmail("student", "student")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("secret123", "encoded")).thenReturn(true);
+
+        AuthenticationResponse response = service.loginMobile(
+                MobileAuthenticationRequest.builder()
+                        .username("student")
+                        .password("secret123")
+                        .build(),
+                "127.0.0.1");
+
+        assertThat(response.authenticated()).isTrue();
+        verifyNoInteractions(turnstileService);
+        verify(loginAttemptService).assertNotBlocked("student", "127.0.0.1");
+        verify(loginAttemptService).loginSucceeded("student", "127.0.0.1");
     }
 
     @Test

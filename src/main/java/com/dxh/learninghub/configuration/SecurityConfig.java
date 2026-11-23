@@ -27,6 +27,7 @@ public class SecurityConfig {
 
     static final String[] PUBLIC_POST_ENDPOINTS = {
             "/auth/login", "/auth/introspect", "/auth/logout", "/auth/refresh", "/users","/auth/login/google"
+            ,"/mobile/auth/login","/mobile/users","/mobile/users/forgot-password"
             ,"/users/reset-password","/users/verify-register","/users/forgot-password","/users/resend-verification"
             ,"/payment-callbacks/payos/webhook"
     };

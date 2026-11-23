@@ -13,6 +13,8 @@ public interface AuthenticationService {
 
     AuthenticationResponse login(AuthenticationRequest request, String ip);
 
+    AuthenticationResponse loginMobile(MobileAuthenticationRequest request, String ip);
+
     AuthenticationResponse refreshToken(RefreshRequest request)
             throws ParseException, JOSEException;
 

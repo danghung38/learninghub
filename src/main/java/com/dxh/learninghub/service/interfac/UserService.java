@@ -1,6 +1,8 @@
 package com.dxh.learninghub.service.interfac;
 
 import com.dxh.learninghub.dto.request.ForgotPasswordRequest;
+import com.dxh.learninghub.dto.request.MobileForgotPasswordRequest;
+import com.dxh.learninghub.dto.request.MobileUserCreationRequest;
 import com.dxh.learninghub.dto.request.ResetPasswordRequest;
 import com.dxh.learninghub.dto.request.UserCreationRequest;
 import com.dxh.learninghub.dto.request.UserUpdateRequest;
@@ -12,9 +14,13 @@ public interface UserService {
 
     UserResponse createUser(UserCreationRequest request);
 
+    UserResponse createMobileUser(MobileUserCreationRequest request);
+
     void verifyRegister(String secretKey);
 
     void forgotPassword(ForgotPasswordRequest request);
+
+    void forgotPasswordMobile(MobileForgotPasswordRequest request);
 
     void resetPassword(ResetPasswordRequest request);
 
