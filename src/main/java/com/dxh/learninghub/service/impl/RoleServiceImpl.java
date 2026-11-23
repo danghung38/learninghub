@@ -47,9 +47,4 @@ public class RoleServiceImpl implements RoleService {
                 .toList();
     }
 
-    @Override
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public void delete(Long role){
-        roleRepository.deleteById(role);
-    }
 }

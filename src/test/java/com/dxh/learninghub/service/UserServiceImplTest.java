@@ -1,6 +1,7 @@
 package com.dxh.learninghub.service;
 
 import com.dxh.learninghub.dto.request.UserCreationRequest;
+import com.dxh.learninghub.dto.request.MobileUserCreationRequest;
 import com.dxh.learninghub.dto.response.UserResponse;
 import com.dxh.learninghub.entity.RedisVerificationToken;
 import com.dxh.learninghub.entity.Role;
@@ -82,6 +83,31 @@ class UserServiceImplTest {
         assertError(() -> service.createUser(request), ErrorCode.EMAIL_EXISTED);
         verify(userRepository, never()).save(any());
         verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void createMobileUser_skipsTurnstileAndCreatesTheSameAccountShape() {
+        MobileUserCreationRequest request = MobileUserCreationRequest.builder()
+                .username("mobile01").password("secret123").fullName("Mobile Student")
+                .phoneNumber("0912345678").email("mobile@example.com").address("Ha Noi")
+                .gender("MALE").dob(LocalDate.of(2000, 1, 1)).build();
+        Role role = Role.builder().name(RoleEnum.USER.name()).build();
+        User user = User.builder().username(request.username()).email(request.email()).build();
+        user.setId(11L);
+
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(roleRepository.findByName(RoleEnum.USER.name())).thenReturn(Optional.of(role));
+        when(userMapper.toUser(any(UserCreationRequest.class))).thenReturn(user);
+        when(passwordEncoder.encode(request.password())).thenReturn("encoded");
+        when(userRepository.save(user)).thenReturn(user);
+        when(redisVrRepository.existsById(anyString())).thenReturn(false);
+        when(userMapper.toUserResponse(user)).thenReturn(UserResponse.builder().id(11L).build());
+
+        UserResponse response = service.createMobileUser(request);
+
+        assertThat(response.id()).isEqualTo(11L);
+        verifyNoInteractions(turnstileService);
+        verify(emailService).sendVerificationEmail(eq(request.email()), eq(request.fullName()), anyString());
     }
 
     @Test

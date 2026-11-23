@@ -21,7 +21,10 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
@@ -29,6 +32,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.time.Duration;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Slf4j
 @Service
@@ -36,35 +40,37 @@ import java.util.function.Consumer;
 public class AwsS3Service {
 
     private static final int MAX_DELETE_BATCH_SIZE = 1000;
-
-    @Value("${aws.s3.access-key}") private String accessKey;
-    @Value("${aws.s3.secret-key}") private String secretKey;
-    @Value("${aws.s3.bucket-name}") private String bucketName;
-    @Value("${aws.s3.base-prefix}") private String basePrefix;
-
+    private static final Region S3_REGION = Region.AP_SOUTHEAST_1;
+    private static final Duration UPLOAD_URL_DURATION = Duration.ofMinutes(59);
+    private static final Duration COURSE_VIDEO_URL_DURATION = Duration.ofDays(7);
+    private static final Duration LESSON_VIDEO_URL_DURATION = Duration.ofHours(2);
+    private static final String LESSON_CACHE_CONTROL = "public, max-age=604800, immutable";
+    private static final Set<String> VIDEO_EXTENSIONS = Set.of("mp4", "webm", "mkv", "mov", "m4v", "avi");
     private final CurrentUserProvider user;
-
+    @Value("${aws.s3.access-key}")
+    private String accessKey;
+    @Value("${aws.s3.secret-key}")
+    private String secretKey;
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+    @Value("${aws.s3.base-prefix}")
+    private String basePrefix;
     private S3Client s3Client;
     private S3Presigner s3Presigner;
 
     @PostConstruct
     private void initS3Clients() {
         var credentialsProvider = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
-        // Sửa Region.US_EAST_1 thành Region.AP_SOUTHEAST_1 cho cả s3Client và s3Presigner
-        this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(Region.AP_SOUTHEAST_1).build();
-        this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(Region.AP_SOUTHEAST_1).build();
+        this.s3Client = S3Client.builder().credentialsProvider(credentialsProvider).region(S3_REGION).build();
+        this.s3Presigner = S3Presigner.builder().credentialsProvider(credentialsProvider).region(S3_REGION).build();
     }
+
     // --- Core Direct Upload
     public String uploadFile(MultipartFile file, String folder, UploadPolicy policy) {
         String fileName = FileUploadUtil.validate(file, policy);
-        String objectKey = buildObjectKey(folder, UUID.randomUUID() + "_" + fileName);
+        String objectKey = createObjectKey(folder, fileName);
         try {
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .contentType(file.getContentType())
-                    .contentLength(file.getSize())
-                    .build();
+            PutObjectRequest request = PutObjectRequest.builder().bucket(bucketName).key(objectKey).contentType(file.getContentType()).contentLength(file.getSize()).build();
 
             // Sửa thành fromBytes để tránh lỗi lệch content-length
             s3Client.putObject(request, RequestBody.fromBytes(file.getBytes()));
@@ -74,6 +80,7 @@ public class AwsS3Service {
             throw new AppException(ErrorCode.UPLOAD_FAIL);
         }
     }
+
     // --- Presigned Uploads ---
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER')")
     public PresignedUploadResponse generateVideoUploadUrl(String fileName, long fileSize) {
@@ -93,44 +100,53 @@ public class AwsS3Service {
     }
 
     private PresignedUploadResponse generateUploadUrl(String folder, String fileName, long fileSize) {
-        String objectKey = buildObjectKey(folder, UUID.randomUUID() + "_" + fileName);
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(30))
-                .putObjectRequest(r -> r.bucket(bucketName).key(objectKey).contentLength(fileSize))
-                .build();
+        String objectKey = createObjectKey(folder, fileName);
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder().signatureDuration(UPLOAD_URL_DURATION).putObjectRequest(r -> r.bucket(bucketName).key(objectKey).contentLength(fileSize)).build();
 
-        return PresignedUploadResponse.builder()
-                .uploadUrl(s3Presigner.presignPutObject(presignRequest).url().toString())
-                .fileUrl(objectKey)
-                .build();
+        return PresignedUploadResponse.builder().uploadUrl(s3Presigner.presignPutObject(presignRequest).url().toString()).fileUrl(objectKey).build();
     }
 
-    // --- Read / Presigned GET URLs ---
+    // --- Read URLs ---
     @Named("resolveFileUrl")
     public String resolveFileUrl(String rawUrlOrKey) {
-        if (rawUrlOrKey == null || rawUrlOrKey.isBlank()) return null;
-        String value = rawUrlOrKey.trim();
-        return value.startsWith("http") ? value : generateViewUrl(normalizeObjectKey(value));
+        return resolveObjectUrl(rawUrlOrKey, this::getPermanentObjectUrl);
+    }
+
+    @Named("resolveVideoUrl")
+    public String resolveVideoUrl(String rawUrlOrKey) {
+        return resolveObjectUrl(rawUrlOrKey, this::generateViewUrl);
     }
 
     @Named("generateViewUrl")
     public String generateViewUrl(String objectKey) {
-        return getPresignedGetUrl(objectKey, Duration.ofDays(7), null);
+        return getPresignedGetUrl(objectKey, COURSE_VIDEO_URL_DURATION, null);
     }
 
     @Named("generateLessonViewUrl")
     public String generateLessonViewUrl(String rawUrlOrKey) {
-        if (rawUrlOrKey == null || rawUrlOrKey.isBlank()) return null;
-        String objectKey = normalizeObjectKey(rawUrlOrKey);
+        return resolveObjectUrl(rawUrlOrKey, this::generateLessonObjectUrl);
+    }
+
+    private String generateLessonObjectUrl(String objectKey) {
+        if (!isVideoObject(objectKey)) {
+            return getPermanentObjectUrl(objectKey);
+        }
+
         String contentType = resolveLessonContentType(objectKey);
 
-        return getPresignedGetUrl(objectKey, Duration.ofHours(1), builder -> {
-            builder.responseContentDisposition("inline")
-                    .responseCacheControl("public, max-age=604800, immutable");
+        return getPresignedGetUrl(objectKey, LESSON_VIDEO_URL_DURATION, builder -> {
+            builder.responseContentDisposition("inline").responseCacheControl(LESSON_CACHE_CONTROL);
             if (contentType != null) {
                 builder.responseContentType(contentType);
             }
         });
+    }
+
+    private String resolveObjectUrl(String rawUrlOrKey, Function<String, String> objectKeyResolver) {
+        if (rawUrlOrKey == null || rawUrlOrKey.isBlank()) return null;
+
+        String value = rawUrlOrKey.trim();
+        return value.startsWith("http") ? value : objectKeyResolver.apply(normalizeObjectKey(value));
     }
 
     private String getPresignedGetUrl(String objectKey, Duration duration, Consumer<GetObjectRequest.Builder> customizer) {
@@ -139,12 +155,27 @@ public class AwsS3Service {
         GetObjectRequest.Builder objectRequestBuilder = GetObjectRequest.builder().bucket(bucketName).key(objectKey);
         if (customizer != null) customizer.accept(objectRequestBuilder);
 
-        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
-                .signatureDuration(duration)
-                .getObjectRequest(objectRequestBuilder.build())
-                .build();
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder().signatureDuration(duration).getObjectRequest(objectRequestBuilder.build()).build();
 
         return s3Presigner.presignGetObject(presignRequest).url().toString();
+    }
+
+    private String getPermanentObjectUrl(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) return null;
+        return s3Client.utilities().getUrl(request -> request.bucket(bucketName).key(objectKey)).toExternalForm();
+    }
+
+    private boolean isVideoObject(String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) return false;
+
+        String path = objectKey.toLowerCase(Locale.ROOT);
+        int queryIndex = path.indexOf('?');
+        if (queryIndex >= 0) path = path.substring(0, queryIndex);
+        int fragmentIndex = path.indexOf('#');
+        if (fragmentIndex >= 0) path = path.substring(0, fragmentIndex);
+        int extensionIndex = path.lastIndexOf('.');
+
+        return extensionIndex >= 0 && VIDEO_EXTENSIONS.contains(path.substring(extensionIndex + 1));
     }
 
     // --- Deletion & Querying ---
@@ -163,8 +194,7 @@ public class AwsS3Service {
         List<String> keys = objectKeys.stream().filter(k -> k != null && !k.isBlank()).distinct().toList();
 
         for (int start = 0; start < keys.size(); start += MAX_DELETE_BATCH_SIZE) {
-            List<ObjectIdentifier> objects = keys.subList(start, Math.min(start + MAX_DELETE_BATCH_SIZE, keys.size()))
-                    .stream().map(k -> ObjectIdentifier.builder().key(k).build()).toList();
+            List<ObjectIdentifier> objects = keys.subList(start, Math.min(start + MAX_DELETE_BATCH_SIZE, keys.size())).stream().map(k -> ObjectIdentifier.builder().key(k).build()).toList();
 
             var response = s3Client.deleteObjects(r -> r.bucket(bucketName).delete(d -> d.objects(objects).quiet(true)));
             if (!response.errors().isEmpty()) {
@@ -180,9 +210,7 @@ public class AwsS3Service {
         List<S3ObjectMetadata> objects = new ArrayList<>();
         for (String prefix : prefixes) {
             var request = ListObjectsV2Request.builder().bucket(bucketName).prefix(buildObjectKey(prefix, "")).build();
-            s3Client.listObjectsV2Paginator(request).stream()
-                    .flatMap(page -> page.contents().stream())
-                    .forEach(obj -> objects.add(new S3ObjectMetadata(obj.key(), obj.lastModified(), obj.size())));
+            s3Client.listObjectsV2Paginator(request).stream().flatMap(page -> page.contents().stream()).forEach(obj -> objects.add(new S3ObjectMetadata(obj.key(), obj.lastModified(), obj.size())));
         }
         return objects;
     }
@@ -200,10 +228,12 @@ public class AwsS3Service {
         return basePrefix + "/" + cleanFolder + (fileName.isBlank() ? "" : "/" + fileName);
     }
 
+    private String createObjectKey(String folder, String validatedFileName) {
+        return buildObjectKey(folder, UUID.randomUUID() + "_" + validatedFileName);
+    }
+
     private String resolveLessonContentType(String objectKey) {
         if (objectKey == null) return null;
-        return MediaTypeFactory.getMediaType(objectKey)
-                .map(Object::toString)
-                .orElse(null);
+        return MediaTypeFactory.getMediaType(objectKey).map(Object::toString).orElse(null);
     }
 }

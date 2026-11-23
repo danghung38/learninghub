@@ -123,13 +123,14 @@ jobs:
     enabled: true
     cron: "0 0 3 * * SUN"
     zone: Asia/Ho_Chi_Minh
-    grace-hours: 24 #remove over 24h
-    dry-run: false #true = run test
+    grace-hours: 720 #remove over 24h
+    dry-run: true #true = run test
 
   deleted-course-content-cleanup:
     enabled: true
-    cron: "0 0 0 * * *"
+    cron: "0 0 0 * * SUN"
     zone: Asia/Ho_Chi_Minh
+    retention-days: 30
 
 withdrawal:
   amount-per-point: 800

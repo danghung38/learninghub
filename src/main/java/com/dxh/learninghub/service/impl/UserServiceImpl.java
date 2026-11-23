@@ -1,9 +1,6 @@
 package com.dxh.learninghub.service.impl;
 
-import com.dxh.learninghub.dto.request.ForgotPasswordRequest;
-import com.dxh.learninghub.dto.request.ResetPasswordRequest;
-import com.dxh.learninghub.dto.request.UserCreationRequest;
-import com.dxh.learninghub.dto.request.UserUpdateRequest;
+import com.dxh.learninghub.dto.request.*;
 import com.dxh.learninghub.dto.response.UserResponse;
 import com.dxh.learninghub.dto.response.UserUpdateResponse;
 import com.dxh.learninghub.entity.RedisVerificationToken;
@@ -64,6 +61,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse createUser(UserCreationRequest request) {
         turnstileService.verify(request.turnstileToken(), "register");
+        return createUserAccount(request);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public UserResponse createMobileUser(MobileUserCreationRequest request) {
+        UserCreationRequest sharedRequest = UserCreationRequest.builder()
+                .username(request.username())
+                .password(request.password())
+                .fullName(request.fullName())
+                .phoneNumber(request.phoneNumber())
+                .email(request.email())
+                .address(request.address())
+                .gender(request.gender())
+                .dob(request.dob())
+                .build();
+        return createUserAccount(sharedRequest);
+    }
+
+    private UserResponse createUserAccount(UserCreationRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
@@ -158,7 +175,17 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
         turnstileService.verify(request.turnstileToken(), "forgot-password");
-        userRepository.findByEmail(request.email())
+        sendPasswordReset(request.email());
+    }
+
+    @Override
+    @Transactional
+    public void forgotPasswordMobile(MobileForgotPasswordRequest request) {
+        sendPasswordReset(request.email());
+    }
+
+    private void sendPasswordReset(String email) {
+        userRepository.findByEmail(email)
                 .filter(User::getEnabled)
                 .ifPresent(user -> {
                     // 1. CHECK COOLDOWN (Chặn gửi liên tục trong 60s theo UserId/Email)

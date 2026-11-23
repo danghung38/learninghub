@@ -25,6 +25,7 @@ public interface LessonMapper {
             nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
             unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(source = "contentUrl", target = "contentUrl", qualifiedByName = "normalizeObjectKey")
+    @Mapping(target = "lessonOrder", ignore = true)
     void updateLessonFromRequest(LessonUpdateRequest request, @MappingTarget Lesson lesson);
 }
 

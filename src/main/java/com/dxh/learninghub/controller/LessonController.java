@@ -1,6 +1,7 @@
 package com.dxh.learninghub.controller;
 
 import com.dxh.learninghub.dto.request.LessonRequest;
+import com.dxh.learninghub.dto.request.LessonReorderRequest;
 import com.dxh.learninghub.dto.request.LessonUpdateRequest;
 import com.dxh.learninghub.dto.request.PresignedUploadRequest;
 import com.dxh.learninghub.dto.response.ApiResponse;
@@ -65,6 +66,18 @@ public class LessonController {
                 .code(HttpStatus.CREATED.value())
                 .message("Create Lesson Successfully")
                 .result(lessonService.createLesson(request))
+                .build();
+    }
+
+    @Operation(summary = "Reorder lessons", description = "Replace the lesson order inside a chapter owned by the teacher")
+    @PatchMapping("/reorder")
+    public ApiResponse<List<LessonResponse>> reorderLessons(
+            @RequestBody @Valid LessonReorderRequest request) {
+
+        return ApiResponse.<List<LessonResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Reorder Lessons Successfully")
+                .result(lessonService.reorderLessons(request))
                 .build();
     }
 

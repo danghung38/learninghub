@@ -1,6 +1,7 @@
 package com.dxh.learninghub.service.interfac;
 
 import com.dxh.learninghub.dto.request.LessonRequest;
+import com.dxh.learninghub.dto.request.LessonReorderRequest;
 import com.dxh.learninghub.dto.request.LessonUpdateRequest;
 import com.dxh.learninghub.dto.response.LessonResponse;
 
@@ -11,6 +12,8 @@ public interface LessonService {
     LessonResponse createLesson(LessonRequest request);
 
     LessonResponse updateLesson(Long id, LessonUpdateRequest request);
+
+    List<LessonResponse> reorderLessons(LessonReorderRequest request);
 
     void deleteLesson(Long id);
 

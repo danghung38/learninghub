@@ -45,13 +45,4 @@ public class RoleController {
                 .build();
     }
 
-    @Operation(summary = "Delete a role", description = "Delete a role by ID")
-    @DeleteMapping("/{roleId}")
-    ApiResponse<Void> delete(@PathVariable Long roleId){
-        roleService.delete(roleId);
-        return ApiResponse.<Void>builder()
-                .code(HttpStatus.OK.value())
-                .message("Delete role successfully")
-                .build();
-    }
 }

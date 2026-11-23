@@ -9,6 +9,4 @@ public interface PermissionService {
     PermissionResponse create(PermissionRequest request);
 
     List<PermissionResponse> getAll();
-
-    void delete(String permission);
 }

@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, Long> {
 
-    List<Lesson> findByChapterOrderByIdAsc(Chapter chapter);
+    List<Lesson> findByChapterOrderByLessonOrderAscIdAsc(Chapter chapter);
 
     @EntityGraph(attributePaths = {
             "chapter",

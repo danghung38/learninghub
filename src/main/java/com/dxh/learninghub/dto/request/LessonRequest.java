@@ -16,6 +16,9 @@ public record LessonRequest(
     @NotBlank(message = "INVALID_BLANK")
     String lessonName,
 
+    @Min(value = 1, message = "MIN_INVALID")
+    Integer lessonOrder,
+
     @NotNull(message = "INVALID_NULL")
     LessonContentType contentType,
 

@@ -13,6 +13,8 @@ public record LessonResponse(
 
     String lessonName,
 
+    Integer lessonOrder,
+
     LessonContentType contentType,
 
     String contentUrl,

@@ -97,25 +97,34 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public AuthenticationResponse login(AuthenticationRequest request, String ip) {
         turnstileService.verify(request.turnstileToken(), "login");
-        loginAttemptService.assertNotBlocked(request.username(), ip);
+        return authenticateCredentials(request.username(), request.password(), ip);
+    }
+
+    @Override
+    public AuthenticationResponse loginMobile(MobileAuthenticationRequest request, String ip) {
+        return authenticateCredentials(request.username(), request.password(), ip);
+    }
+
+    private AuthenticationResponse authenticateCredentials(String username, String password, String ip) {
+        loginAttemptService.assertNotBlocked(username, ip);
 
         User user = userRepository
-                .findByUsernameOrEmail(request.username(), request.username())
+                .findByUsernameOrEmail(username, username)
                 .orElse(null);
 
         boolean invalidCredentials = user == null
                         || user.getPassword() == null
-                        || !passwordEncoder.matches(request.password(), user.getPassword());
+                        || !passwordEncoder.matches(password, user.getPassword());
 
         if (invalidCredentials) {
-            loginAttemptService.loginFailed(request.username(), ip);
+            loginAttemptService.loginFailed(username, ip);
             throw new AppException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         if (!user.getEnabled()) {throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);}
         if (user.getBanned()) {throw new AppException(ErrorCode.ACCOUNT_BANNED);}
 
-        loginAttemptService.loginSucceeded(request.username(), ip);
+        loginAttemptService.loginSucceeded(username, ip);
 
         //last login
         user.setLastLogin(java.time.LocalDateTime.now());
@@ -129,7 +138,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .map(Role::getName)
                 .collect(Collectors.joining(" "));
 
-        log.info("User {} login successful ip {}", request.username(), ip);
+        log.info("User {} login successful ip {}", username, ip);
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
